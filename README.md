@@ -6,7 +6,15 @@ A cinematic SOC wall / briefing / threat-intel command center. **All data is sim
 Open `index.html` directly (works from `file://`, fully offline), or serve the folder:
 `python -m http.server 8731` → http://localhost:8731
 
-Keys: `Space` pause · `F` fullscreen · `R` reset · `1–6` categories · `G` D3 globe · `O` Orbital (Three.js) · `H` holo shader · `M` alert sting
+Keys: `Ctrl/⌘ K` search & commands · `?` shortcuts sheet · `Esc` close / clear focus · `Space` pause · `F` fullscreen · `R` reset · `1–6` categories · `G` D3 globe · `O` Orbital (Three.js) · `H` holo shader · `M` alert sting · `W` presenter scenarios
+
+## Interacting (v2.1)
+- **Everything filters.** Click a matrix cell (category × severity), a kill-chain stage, an actor constellation, a sector icon, or an Emirate node (map or inset) to isolate it. Active filters appear as removable chips above the map; `R` or *Clear all* resets. Hovering any of these dims the arcs, tokens and links that don't match.
+- **Timeline brush.** The replay slider sits on a 24 h stacked histogram (10-minute bins, category colours, shaded = current window). Drag or use `← →` to replay; gold ticks under the baseline are detected campaigns — click one to replay from 5 min before it. The label shows LIVE (with feed staleness), PAUSED or REPLAY.
+- **Incident inspector.** Click a feed line or an arc head on the map (hover shows a tooltip) to open the slide-over: route, note, damage, attribution, kill-chain stepper, and actions (*Replay arc*, *Focus*, *Similar incidents*, *Copy JSON*). Clicking a country or a ranked row opens its dossier (inbound by category, block rate, most active groups).
+- **Command palette.** `Ctrl/⌘ K` jumps to any country, category, actor group, sector, Emirate or command (modes, views, windows, scenarios, export). Bilingual matching.
+- **Deep links.** Mode, window, view, filters and focus are mirrored into the URL hash (`#m=…&w=…&v=globe&c=ddos,apt&s=3&f=SAU&a=GF…`), so a view can be bookmarked or shared; it is restored on load.
+- **Presenter scenarios** (`W`, hidden in Briefing): launch a campaign against the UAE, a critical ICS / DDoS / APT hit, a blocked wave at the perimeter, calm down, or change the attack rate (×0.25–×4). Every injected event is marked *simulated* in the feed. Also via `threatscape.scenario('ics')`, `threatscape.inject({...})`, `threatscape.setRate(2)`, `threatscape.inspect('SAU')`.
 
 ## Structure
 - `index.html` — the app. Theme tokens in `:root`, tunables in `CONFIG`, every file path in `ASSETS`.

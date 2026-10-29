@@ -62,6 +62,8 @@
   --scanline:rgba(255,255,255,.035);
   --banner-red:rgba(120,8,16,.92);
   --kc-lane:rgba(201,162,39,.08);
+  /* v2.1 z-index scale */
+  --z-ov:3; --z-tooltip:10; --z-scenario:4; --z-flash:40; --z-banner:50; --z-inspector:60; --z-palette:80; --z-intro:90; --z-loader:100;
   /* Mashrabiya lattice (8-point star) used as background texture, ≤6% opacity */
   --lattice:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23C9A227' stroke-opacity='0.055' stroke-width='0.8'%3E%3Crect x='14' y='14' width='28' height='28'/%3E%3Crect x='14' y='14' width='28' height='28' transform='rotate(45 28 28)'/%3E%3Ccircle cx='28' cy='28' r='6'/%3E%3Cpath d='M0 0L14 14M56 0L42 14M0 56L14 42M56 56L42 42M28 0V8M28 48V56M0 28H8M48 28H56'/%3E%3C/g%3E%3C/svg%3E");
   /* Arabesque corner notch ornament */
@@ -105,7 +107,7 @@ button,select,input{font:inherit;color:inherit}
 .tex{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
   background:url('assets/img/lattice.svg') 0 0/150px 150px;mix-blend-mode:screen;opacity:var(--tex-opacity);
   -webkit-mask-image:radial-gradient(ellipse at center,rgba(0,0,0,.25) 35%,#000 100%);mask-image:radial-gradient(ellipse at center,rgba(0,0,0,.25) 35%,#000 100%)}
-:where(.panel) > :where(:not(.tex)){position:relative;z-index:1} /* zero specificity: any own rule wins */
+:where(.panel) > :where(:not(.tex):not(.spot)){position:relative;z-index:1} /* zero specificity: any own rule wins */
 #topbar{grid-area:top}
 #left{grid-area:left}
 #mapWrap{grid-area:map}
@@ -243,7 +245,7 @@ button,select,input{font:inherit;color:inherit}
 #skyline .ground{stroke-opacity:.6}
 
 /* Map overlays */
-.ov{position:absolute;z-index:3}
+.ov{position:absolute;z-index:var(--z-ov)}
 #controls{top:10px;left:10px;right:260px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
 #controls > *{pointer-events:auto}
 .ctlrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -254,17 +256,43 @@ button,select,input{font:inherit;color:inherit}
 .ctl{display:inline-flex;align-items:center;gap:.35rem;background:rgba(0,0,0,.6);border:1px solid var(--gold-faint);border-radius:7px;padding:.22rem .5rem;font-size:.72rem;color:var(--muted)}
 .ctl select{background:#05080f;border:1px solid var(--gold-faint);border-radius:4px;padding:.1rem .25rem;font-size:.72rem}
 .ctl input[type=checkbox]{accent-color:var(--gold)}
-.ibtn{background:rgba(0,0,0,.6);border:1px solid var(--gold-faint);border-radius:7px;padding:.3rem .55rem;font-size:.72rem;cursor:pointer;color:var(--muted)}
+.ibtn{display:inline-flex;align-items:center;gap:.35rem;background:rgba(0,0,0,.6);border:1px solid var(--gold-faint);border-radius:7px;padding:.3rem .55rem;font-size:.72rem;cursor:pointer;color:var(--muted);transition:color .18s,border-color .18s,transform .12s}
 .ibtn:hover,.ibtn[aria-pressed="true"]{color:var(--white);border-color:var(--gold)}
-.scrub{display:flex;align-items:center;gap:.6rem;background:rgba(0,0,0,.6);border:1px solid var(--gold-faint);border-radius:7px;padding:.25rem .6rem;font-size:.7rem;color:var(--muted);max-width:640px}
-.scrub input{flex:1;accent-color:var(--gold);min-width:120px}
+.ibtn svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ibtn kbd,.pal kbd,.keys kbd{font:600 .6rem var(--font-mono);border:1px solid var(--gold-faint);border-radius:3px;padding:0 .3rem;color:var(--muted);background:rgba(255,255,255,.03)}
+.scrub{display:flex;align-items:center;gap:.6rem;background:rgba(0,0,0,.6);border:1px solid var(--gold-faint);border-radius:7px;padding:.3rem .6rem .25rem;font-size:.7rem;color:var(--muted);max-width:780px;width:100%}
 .scrub .lbl{font-family:var(--font-mono);color:var(--white);min-width:7.5em;text-align:right}
-.live-dot{display:inline-block;width:.5rem;height:.5rem;border-radius:50%;background:var(--uae-red);margin-right:.3rem;animation:breathe 1.4s infinite}
+.scrub .st{display:inline-flex;align-items:center;gap:.3rem;min-width:9.5em;white-space:nowrap}
+.scrub .st .stale{color:var(--dim);font-family:var(--font-mono);font-size:.64rem}
+.scrub .st .stale.old{color:#FDBA74}
+.live-dot{display:inline-block;width:.5rem;height:.5rem;border-radius:50%;background:var(--uae-red);animation:breathe 1.4s infinite}
 .scrub.replay .live-dot{background:var(--gold)}
-
-#focusChip{display:none;align-self:flex-start;align-items:center;gap:.5rem;background:rgba(201,162,39,.16);border:1px solid var(--gold);border-radius:999px;padding:.2rem .3rem .2rem .7rem;font-size:.75rem}
-#focusChip.show{display:inline-flex}
-#focusChip button{background:#000;border:1px solid var(--gold-soft);border-radius:50%;width:1.4rem;height:1.4rem;cursor:pointer;line-height:1}
+.scrub.paused .live-dot{background:var(--muted);animation:none}
+/* v2.1 timeline brush: stacked 24h histogram under a transparent <input type=range> (keeps pointer + keyboard semantics) */
+.tl{position:relative;flex:1;min-width:160px;height:42px}
+#tlSvg{position:absolute;left:0;right:0;top:0;height:32px;width:100%;display:block;overflow:visible}
+#tlSvg .tl-base{stroke:var(--gold-faint);vector-effect:non-scaling-stroke}
+#tlSvg .tl-win{fill:rgba(201,162,39,.09)}
+#tlSvg .tl-play{stroke:var(--white);stroke-width:1.2;vector-effect:non-scaling-stroke}
+#tlSvg .tl-now{stroke:var(--uae-red);stroke-width:1;vector-effect:non-scaling-stroke}
+.tl input{position:absolute;left:0;top:0;width:100%;height:32px;margin:0;opacity:0;cursor:ew-resize}
+.scrub:focus-within .tl{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
+.tlh{position:absolute;top:0;height:32px;width:0;border-left:1px dashed rgba(244,244,242,.55);pointer-events:none;display:none}
+.tlh span{position:absolute;top:-1.6rem;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 .62rem var(--font-mono);color:var(--white);background:rgba(3,6,12,.92);border:1px solid var(--gold-soft);border-radius:4px;padding:.1rem .35rem}
+.tlh.show{display:block}
+#tlMarks{position:absolute;left:0;right:0;top:32px;height:10px}
+.tlm{position:absolute;top:1px;width:0;height:0;padding:0;border:5px solid transparent;border-bottom:6px solid var(--gold);border-top:0;background:none;transform:translateX(-5px);cursor:pointer;filter:drop-shadow(0 0 3px rgba(201,162,39,.6))}
+.tlm:hover{border-bottom-color:#fff}
+/* v2.1 filter chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chips:empty{display:none}
+.chip-f{--c:var(--gold);display:inline-flex;align-items:center;gap:.4rem;background:color-mix(in srgb,var(--c) 14%,rgba(0,0,0,.6));border:1px solid var(--c);border-radius:999px;padding:.18rem .3rem .18rem .65rem;font-size:.72rem;color:var(--white)}
+.chip-f i{width:.5rem;height:.5rem;border-radius:2px;background:var(--c)}
+.chip-f .ar{color:var(--muted);font-size:.7rem}
+.chip-f button{background:#000;border:1px solid var(--gold-soft);border-radius:50%;width:1.3rem;height:1.3rem;cursor:pointer;line-height:1;font-size:.68rem;display:grid;place-items:center;color:var(--muted);transition:color .15s,border-color .15s}
+.chip-f button:hover{color:var(--white);border-color:var(--gold)}
+.chip-f.clear{background:transparent;border-style:dashed;cursor:pointer;padding:.18rem .65rem;color:var(--muted)}
+.chip-f.clear:hover{color:var(--white);border-style:solid}
 
 #sceneCaption{top:12px;left:14px;display:none;padding:.45rem .9rem;border-left:3px solid var(--gold);background:linear-gradient(90deg,rgba(0,0,0,.8),transparent);font-size:1rem;letter-spacing:.06em}
 #sceneCaption .ar{display:block;font-size:.95rem;color:var(--gold)}
@@ -292,7 +320,7 @@ button,select,input{font:inherit;color:inherit}
 #legend .note{margin-top:.35rem;font-size:.62rem;color:var(--dim)}
 
 #tooltip{
-  position:absolute;z-index:10;pointer-events:none;opacity:0;transition:opacity .12s;
+  position:absolute;z-index:var(--z-tooltip);pointer-events:none;opacity:0;transition:opacity .12s;
   min-width:220px;max-width:280px;padding:.6rem .75rem;border-radius:8px;
   background:rgba(3,6,12,.94);border:1px solid var(--gold);box-shadow:0 8px 30px rgba(0,0,0,.6);font-size:.76rem;
 }
@@ -311,7 +339,12 @@ button,select,input{font:inherit;color:inherit}
 #briefBanner button{background:var(--gold);color:#111;border:0;border-radius:6px;padding:.35rem .8rem;font-weight:700;cursor:pointer}
 html[data-mode="briefing"] #briefBanner{display:flex}
 
-#mapMsg{inset:0;display:none;place-items:center;text-align:center;color:var(--muted);font-size:.85rem}
+#mapMsg{inset:0;display:none;place-items:center;text-align:center;color:var(--muted);font-size:.85rem;pointer-events:none}
+#mapMsg > div{pointer-events:auto;background:rgba(3,6,12,.85);border:1px solid var(--gold-soft);border-radius:10px;padding:1rem 1.4rem}
+#mapMsg .empty{display:flex;flex-direction:column;align-items:center;gap:.45rem}
+#mapMsg .empty b{color:var(--white);font-weight:600}
+#mapMsg .empty [lang=ar]{color:var(--gold)}
+.rrow-empty{padding:.4rem 0;color:var(--dim);font-size:.74rem}
 
 /* Mode visibility */
 html[data-mode="soc"] #controls,
@@ -321,13 +354,14 @@ html[data-mode="soc"] #sceneCaption{display:block}
 /* =====================================================================
    RIGHT RAIL
    ===================================================================== */
-#right{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
+#right{display:flex;flex-direction:column;gap:var(--gap);min-height:0;overflow:hidden}
 #right .panel{display:flex;flex-direction:column}
 #srcPanel,#dstPanel{flex:0 1 auto}
 #feedPanel{flex:1 1 0;min-height:120px}
 .rlist{padding:.3rem .6rem .45rem;display:flex;flex-direction:column;gap:.15rem;overflow:hidden}
-.rrow{display:grid;grid-template-columns:1.1rem 1.5rem 1fr auto;grid-template-rows:auto auto;column-gap:.35rem;align-items:center;padding:.12rem 0;cursor:pointer;border-radius:4px}
+.rrow{display:grid;grid-template-columns:1.1rem 1.5rem 1fr auto;grid-template-rows:auto auto;column-gap:.35rem;align-items:center;padding:.12rem 0;cursor:pointer;border-radius:4px;transition:background .15s,transform .12s}
 .rrow:hover{background:var(--gold-faint)}
+.rrow:active,.cat:active,.ibtn:active,.seg button:active,.modes button:active,.fl:active{transform:scale(.97)}
 .rrow .rk{font:600 .66rem var(--font-mono);color:var(--dim)}
 .rrow .nm{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rrow .val{font-size:.76rem;color:var(--white)}
@@ -365,7 +399,9 @@ html[data-mode="soc"] #sceneCaption{display:block}
 #matrix .hd{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;align-self:end}
 #matrix .rl{font-size:.66rem;display:flex;align-items:center;gap:.35rem;white-space:nowrap;overflow:hidden}
 #matrix .rl i{width:.5rem;height:.5rem;border-radius:2px;flex:none}
-#matrix .cell{display:grid;place-items:center;font:600 .64rem var(--font-mono);border-radius:3px;transition:background-color .8s;min-height:0;line-height:1}
+#matrix .cell{display:grid;place-items:center;font:600 .64rem var(--font-mono);border-radius:3px;transition:background-color .8s,filter .15s;min-height:0;line-height:1;cursor:pointer}
+#matrix .cell:hover{filter:brightness(1.3)}
+#matrix .cell.sel{outline:2px solid var(--gold);outline-offset:-1px;box-shadow:0 0 10px rgba(201,162,39,.45)}
 .mx-side{display:flex;flex-direction:column;justify-content:center;gap:.35rem;font-size:.66rem;color:var(--muted)}
 .buckets{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
 .bk{border:1px solid var(--gold-faint);border-radius:4px;padding:.2rem .25rem;text-align:center;background:rgba(255,255,255,.02)}
@@ -384,12 +420,14 @@ html[data-mode="soc"] #sceneCaption{display:block}
 .chip.sim{border-color:rgba(251,146,60,.55);color:#FDBA74}
 .chip.vision{color:var(--gold)}
 #footer .keys{margin-left:auto;color:var(--dim)}
+#footer .keys button{background:none;border:0;padding:0;color:var(--dim);cursor:pointer;font:inherit}
+#footer .keys button:hover{color:var(--white)}
 #footer kbd{font:600 .6rem var(--font-mono);border:1px solid var(--gold-faint);border-radius:3px;padding:0 .25rem;color:var(--muted)}
 
 /* =====================================================================
    LOADER
    ===================================================================== */
-#loader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:var(--bg);transition:opacity .8s}
+#loader{position:fixed;inset:0;z-index:var(--z-loader);display:grid;place-items:center;background:var(--bg);transition:opacity .8s}
 #loader.done{opacity:0;pointer-events:none}
 #loader .inner{text-align:center}
 #loader svg{width:110px;height:110px;animation:pulse 1.6s ease-in-out infinite;filter:drop-shadow(0 0 16px rgba(201,162,39,.6))}
@@ -451,8 +489,10 @@ html[data-holo="on"] #holo{display:block}
 .kc-body{position:relative;min-width:0}
 #kcCanvas{position:absolute;inset:0;width:100%;height:100%}
 .kc-stages{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);pointer-events:none}
-.kc-st{border-left:1px solid var(--gold-faint);padding:.1rem .45rem;display:flex;flex-direction:column;justify-content:space-between}
+.kc-st{border-left:1px solid var(--gold-faint);padding:.1rem .45rem;display:flex;flex-direction:column;justify-content:space-between;pointer-events:auto;cursor:pointer;transition:background .2s;border-radius:4px}
 .kc-st:first-child{border-left:0}
+.kc-st:hover{background:rgba(201,162,39,.06)}
+.kc-st.sel{background:rgba(201,162,39,.13);box-shadow:inset 0 -2px 0 var(--gold)}
 .kc-st .en{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .kc-st .ar{font-size:.66rem;color:var(--gold);font-family:var(--font-ar)}
 .kc-st .n{font:600 .66rem var(--font-mono);color:var(--green-text);align-self:flex-end}
@@ -471,13 +511,22 @@ html[data-holo="on"] #holo{display:block}
 .act-link{fill:none;stroke-linecap:round;transition:stroke-opacity .8s,stroke-width .8s}
 .sec-icon{mix-blend-mode:screen}
 .sec-label{font:500 7.5px var(--font-en);fill:var(--muted);text-anchor:middle;letter-spacing:.04em}
-.act-g{cursor:default}
-.act-g:hover .act-name{fill:var(--gold)}
+.act-g,.sec-g{cursor:pointer}
+.act-g:hover .act-name,.act-g.sel .act-name,.sec-g:hover .sec-label,.sec-g.sel .sec-label{fill:var(--gold)}
+.act-g.sel .act-line{stroke-opacity:.9}
+.act-ring,.sec-ring{fill:none;stroke:var(--gold);stroke-opacity:0;transition:stroke-opacity .2s}
+.act-g.sel .act-ring,.sec-g.sel .sec-ring{stroke-opacity:.8}
+.act-g.dim,.sec-g.dim{opacity:.35!important}
+#inset .inode,#map g.em{cursor:pointer}
+#inset .inode.sel .node,#inset .inode:hover .node{fill:var(--white);stroke:var(--gold);stroke-width:1.5}
+#inset .ncount{fill:var(--green-text);font:600 8.5px var(--font-mono);paint-order:stroke;stroke:#000;stroke-width:2.5px;text-anchor:middle;opacity:0;transition:opacity .15s}
+#inset .inode:hover .ncount,#inset .inode.sel .ncount{opacity:1}
+.em-hit{fill:transparent;stroke:none;pointer-events:all}
 
 /* =====================================================================
    v2 — SEVERITY SHOCKWAVE + BANNER
    ===================================================================== */
-#critBanner{position:fixed;left:50%;top:78px;transform:translate(-50%,-180px);opacity:0;z-index:50;display:flex;align-items:center;gap:.9rem;
+#critBanner{position:fixed;left:50%;top:78px;transform:translate(-50%,-180px);opacity:0;z-index:var(--z-banner);display:flex;align-items:center;gap:.9rem;
   padding:.45rem 1.1rem;background:var(--banner-red);border:1px solid var(--uae-red);border-radius:6px;box-shadow:0 0 30px rgba(239,51,64,.55);
   font-size:.82rem;letter-spacing:.05em;transition:transform .35s cubic-bezier(.2,.9,.3,1.2);white-space:nowrap;max-width:94vw;overflow:hidden}
 #critBanner.show{transform:translate(-50%,0);opacity:1}
@@ -485,14 +534,14 @@ html[data-holo="on"] #holo{display:block}
 #critBanner [lang=ar]{font-size:.9rem;color:#FFD1D4}
 #app.chroma{filter:url(#chromaF);animation:jolt .45s steps(6)}
 @keyframes jolt{0%{transform:translate(0,0)}20%{transform:translate(-3px,1px)}40%{transform:translate(3px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(1px,1px)}100%{transform:none}}
-#critFlash{position:fixed;inset:0;z-index:40;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(239,51,64,.35))}
+#critFlash{position:fixed;inset:0;z-index:var(--z-flash);pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(239,51,64,.35))}
 #critFlash.on{animation:cflash .6s ease-out}
 @keyframes cflash{0%{opacity:1}100%{opacity:0}}
 
 /* =====================================================================
    v2 — BRIEFING INTRO SEQUENCE
    ===================================================================== */
-#intro{position:fixed;inset:0;z-index:90;display:none;place-items:center;background:#000;cursor:pointer}
+#intro{position:fixed;inset:0;z-index:var(--z-intro);display:none;place-items:center;background:#000;cursor:pointer}
 #intro.run{display:grid}
 #intro .hero{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transform:scale(1.06)}
 #intro.run .hero{animation:heroIn 6s ease-out forwards}
@@ -515,11 +564,126 @@ html[data-holo="on"] #holo{display:block}
 @keyframes materialize{0%{opacity:0;filter:blur(8px) brightness(2)}100%{opacity:1;filter:none}}
 
 /* =====================================================================
+   v2.1 — CURSOR SPOTLIGHT (one restrained effect, hover only)
+   ===================================================================== */
+.spot{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;opacity:0;transition:opacity .35s;
+  background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(201,162,39,.11),transparent 65%)}
+.panel:hover > .spot{opacity:1}
+#mapWrap > .spot,html[data-mode="soc"] .spot{display:none}
+
+/* =====================================================================
+   v2.1 — INCIDENT INSPECTOR (slide-over)
+   ===================================================================== */
+#inspector{position:fixed;top:calc(64px + 2*var(--gap));right:var(--gap);width:min(380px,92vw);
+  max-height:calc(100vh - 64px - 58px - 124px - 26px - 6*var(--gap));z-index:var(--z-inspector);
+  display:flex;flex-direction:column;background:rgba(3,6,12,.96);border:1px solid var(--gold);border-radius:var(--radius);
+  box-shadow:0 24px 70px rgba(0,0,0,.65),inset 0 1px 0 rgba(201,162,39,.2);
+  transform:translateX(calc(100% + 24px));opacity:0;pointer-events:none;transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s}
+#inspector.open{transform:none;opacity:1;pointer-events:auto}
+#inspector .ins-h{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--gold-faint)}
+#inspector .ins-h .t{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+#inspector .ins-h .t .en{font-size:.82rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+#inspector .ins-h .t .ar{font-size:.85rem;color:var(--gold)}
+#inspector .ins-h .x{margin-left:auto}
+#inspector .ins-b{overflow:auto;padding:.7rem .8rem .9rem;display:flex;flex-direction:column;gap:.7rem;font-size:.78rem}
+.ins-title{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.ins-title .id{font-family:var(--font-mono);color:var(--dim);font-size:.68rem}
+.ins-title .tag{font-weight:600;color:var(--c,var(--gold))}
+.ins-route{display:flex;align-items:center;gap:.6rem;font-size:1rem;font-weight:600}
+.ins-route .flag{font-size:1.35em}
+.ins-route .arrow{color:var(--gold);font-weight:400}
+.ins-route small{display:block;font-size:.66rem;font-weight:400;color:var(--muted)}
+.ins-note{color:var(--muted);line-height:1.4;border-left:2px solid var(--c,var(--gold));padding-left:.6rem}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:.35rem .8rem}
+.kv div{display:flex;flex-direction:column;line-height:1.15}
+.kv label{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.kv b{font:600 .95rem var(--font-mono);color:var(--white)}
+.kv b.red{color:var(--red-text)}
+.kv b.green{color:var(--green-text)}
+.ins-actor{display:flex;align-items:center;gap:.6rem}
+.ins-actor .dot{width:.7rem;height:.7rem;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+.ins-actor img{width:26px;height:26px;mix-blend-mode:screen;margin-left:auto}
+.ins-actor .ar{color:var(--muted);font-size:.74rem}
+.kc-step{list-style:none;margin:0;padding:.4rem 0 0;display:grid;grid-template-columns:repeat(7,1fr);gap:0;position:relative}
+.kc-step::before{content:"";position:absolute;left:7%;right:7%;top:calc(.4rem + 6px);height:1px;background:var(--gold-faint)}
+.kc-step li{display:flex;flex-direction:column;align-items:center;gap:.25rem;text-align:center;position:relative}
+.kc-step li i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--gold-soft);background:#070B14;display:grid;place-items:center;font-size:8px;line-height:1;color:#000;font-style:normal;font-weight:800}
+.kc-step li.done i{background:var(--gold);border-color:var(--gold)}
+.kc-step li.stop i{background:var(--green-text);border-color:var(--green-text);box-shadow:0 0 10px rgba(52,199,116,.7)}
+.kc-step li.stop i::after{content:"✓"}
+.kc-step li.hit i{background:var(--uae-red);border-color:var(--uae-red);box-shadow:0 0 10px rgba(239,51,64,.7)}
+.kc-step li.hit i::after{content:"!";color:#fff}
+.kc-step li .en{font-size:.56rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kc-step li .ar{font-size:.58rem;color:var(--dim)}
+.kc-step li.stop .en,.kc-step li.hit .en{color:var(--white);font-weight:600}
+.ins-acts{display:flex;flex-wrap:wrap;gap:.4rem;padding-top:.2rem}
+.ins-sec{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--gold-faint);padding-bottom:.2rem}
+.bars{display:flex;flex-direction:column;gap:.3rem}
+.bars .br{display:grid;grid-template-columns:7.5em 1fr 3.5em;gap:.5rem;align-items:center;font-size:.72rem}
+.bars .br .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.bars .br .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.bars .br .bar i{display:block;height:100%;border-radius:3px;background:var(--c);transition:width .6s}
+.bars .br .v{font-family:var(--font-mono);text-align:right;color:var(--white)}
+.ins-empty{color:var(--dim);font-size:.74rem}
+
+/* =====================================================================
+   v2.1 — COMMAND PALETTE + SHORTCUTS SHEET
+   ===================================================================== */
+.ovl{position:fixed;inset:0;z-index:var(--z-palette);display:none;place-items:start center;padding-top:11vh;background:rgba(2,4,10,.6);backdrop-filter:blur(3px)}
+.ovl.open{display:grid}
+.pal{width:min(640px,92vw);background:rgba(3,6,12,.97);border:1px solid var(--gold);border-radius:10px;box-shadow:0 30px 90px rgba(0,0,0,.75);overflow:hidden}
+.pal .in{display:flex;align-items:center;gap:.6rem;padding:.2rem .9rem;border-bottom:1px solid var(--gold-faint)}
+.pal .in svg{width:16px;height:16px;fill:none;stroke:var(--gold);stroke-width:1.8;stroke-linecap:round}
+.pal input{flex:1;background:transparent;border:0;padding:.75rem 0;font-size:1rem;outline:none;color:var(--white)}
+.pal input::placeholder{color:var(--dim)}
+.pal ul{list-style:none;margin:0;padding:.3rem;max-height:52vh;overflow:auto}
+.pal li{display:flex;align-items:center;gap:.6rem;padding:.42rem .7rem;border-radius:6px;cursor:pointer;font-size:.82rem;scroll-margin:.3rem}
+.pal li[aria-selected="true"],.pal li:hover{background:var(--gold-faint);box-shadow:inset 0 0 0 1px var(--gold-soft)}
+.pal li .sw{width:.55rem;height:.55rem;border-radius:2px;background:var(--c,var(--gold));flex:none}
+.pal li .flag{font-size:1.1em}
+.pal li .ar{color:var(--muted);font-size:.76rem}
+.pal li .grp{margin-left:auto;font-size:.6rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.pal li.none{color:var(--dim);cursor:default}
+.pal .hint{padding:.4rem .9rem;border-top:1px solid var(--gold-faint);font-size:.64rem;color:var(--dim);display:flex;gap:1rem;flex-wrap:wrap}
+.keys{padding:.3rem .9rem .8rem}
+.keys .ph{padding-left:0;padding-right:0}
+.keys-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem 1.6rem;padding-top:.6rem;font-size:.76rem}
+.keys-grid > div{display:grid;grid-template-columns:5.2em 1fr auto;gap:.6rem;align-items:center}
+.keys-grid .ar{color:var(--muted);font-size:.74rem}
+.keys kbd{font-size:.66rem;padding:.05rem .35rem}
+
+/* =====================================================================
+   v2.1 — SCENARIO CONTROLS (presenter)
+   ===================================================================== */
+#scenario{right:10px;bottom:10px;width:258px;display:none;z-index:var(--z-scenario);padding-bottom:.5rem}
+#scenario.open{display:block}
+html[data-mode="briefing"] #scenario{display:none}
+#scenario .ph .x{margin-left:auto;background:none;border:0;cursor:pointer;color:var(--muted);padding:0;display:grid}
+#scenario .ph .x svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+#scenario .ph .x:hover{color:var(--white)}
+.sc-list{display:flex;flex-direction:column;gap:4px;padding:.45rem .6rem 0}
+.sc-list button{--c:var(--gold);display:flex;gap:.5rem;align-items:center;text-align:left;background:rgba(255,255,255,.025);
+  border:1px solid color-mix(in srgb,var(--c) 30%,transparent);border-left:3px solid var(--c);border-radius:6px;padding:.3rem .55rem;font-size:.72rem;cursor:pointer;color:var(--white);transition:background .15s,border-color .15s,transform .12s}
+.sc-list button:hover{background:color-mix(in srgb,var(--c) 12%,transparent);border-color:var(--c)}
+.sc-list button:active{transform:scale(.98)}
+.sc-list button .t{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.2}
+.sc-list button .ar{color:var(--muted);font-size:.68rem;text-align:left}
+.sc-list button .sv{font:700 .58rem var(--font-mono);padding:0 .3rem;border-radius:3px;border:1px solid}
+.sc-rate{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;align-items:center;padding:.5rem .7rem 0;font-size:.68rem;color:var(--muted)}
+.sc-rate input{accent-color:var(--gold);min-width:0}
+.sc-rate b{font:600 .72rem var(--font-mono);color:var(--white);min-width:3em;text-align:right}
+.sc-note{padding:.35rem .7rem 0;font-size:.6rem;color:#FDBA74}
+
+/* =====================================================================
    RESPONSIVE
    ===================================================================== */
 @media (max-width:1500px){
   .ledger label .x{display:none}
   #threatLevelAr{display:none}
+  #bPalette kbd{display:none}
+}
+@media (max-width:1380px){
+  #bPalette span{display:none}
 }
 @media (max-width:1280px){
   .titles .en-title{letter-spacing:.12em}
@@ -529,6 +693,9 @@ html[data-holo="on"] #holo{display:block}
   #controls{right:220px}
 }
 @media (max-width:1100px){
+  #inspector{top:auto;bottom:0;left:0;right:0;width:auto;max-height:70vh;border-radius:var(--radius) var(--radius) 0 0;transform:translateY(110%)}
+  #inspector.open{transform:none}
+  .keys-grid{grid-template-columns:1fr}
   body{overflow:auto}
   #app{height:auto;grid-template-columns:1fr;grid-template-rows:auto 70vh auto auto 64px auto auto;
     grid-template-areas:"top" "map" "left" "right" "kill" "matrix" "foot"}
@@ -607,6 +774,7 @@ html[data-holo="on"] #holo{display:block}
       </div>
     </div>
     <div class="tb-right">
+      <button type="button" class="ibtn" id="bPalette" title="Search countries, actors and commands (Ctrl+K)" aria-label="Search and commands (Ctrl+K)"><i data-icon="search"></i><span>Search</span><kbd>Ctrl K</kbd></button>
       <div class="modes" role="group" aria-label="Display mode">
         <button type="button" data-mode="soc" aria-pressed="false">SOC Wall</button>
         <button type="button" data-mode="analyst" aria-pressed="true">Analyst</button>
@@ -681,23 +849,36 @@ html[data-holo="on"] #holo{display:block}
         </label>
         <label class="ctl"><input type="checkbox" id="fUae"> Targeting UAE</label>
         <label class="ctl"><input type="checkbox" id="fBlk"> Blocked only</label>
-        <button type="button" class="ibtn" id="bGlobe" aria-pressed="false" title="Toggle globe projection (G)">◐ Globe</button>
-        <button type="button" class="ibtn" id="bOrbit" aria-pressed="false" title="Orbital 3D view (O)">◉ Orbital</button>
-        <button type="button" class="ibtn" id="bRotate" aria-pressed="true" title="Idle rotation (globe)">⟳ Rotate</button>
-        <button type="button" class="ibtn" id="bHolo" aria-pressed="true" title="Scanline / bloom shader (H)">▤ Holo</button>
-        <button type="button" class="ibtn" id="bSound" aria-pressed="false" title="Critical alert sting (Analyst mode, M)">🔇 Sound</button>
-        <button type="button" class="ibtn" id="bPause" aria-pressed="false" title="Pause / play (Space)">❚❚ Pause</button>
-        <button type="button" class="ibtn" id="bReset" title="Reset view & filters (R)">⟲ Reset</button>
+        <button type="button" class="ibtn" id="bGlobe" aria-pressed="false" title="Toggle globe projection (G)"><i data-icon="globe"></i>Globe</button>
+        <button type="button" class="ibtn" id="bOrbit" aria-pressed="false" title="Orbital 3D view (O)"><i data-icon="orbit"></i>Orbital</button>
+        <button type="button" class="ibtn" id="bRotate" aria-pressed="true" title="Idle rotation (globe)"><i data-icon="rotate"></i>Rotate</button>
+        <button type="button" class="ibtn" id="bHolo" aria-pressed="true" title="Scanline / bloom shader (H)"><i data-icon="holo"></i>Holo</button>
+        <button type="button" class="ibtn" id="bSound" aria-pressed="false" title="Critical alert sting (Analyst mode, M)"><i data-icon="soundOff"></i>Sound</button>
+        <button type="button" class="ibtn" id="bPause" aria-pressed="false" title="Pause / play (Space)"><i data-icon="pause"></i>Pause</button>
+        <button type="button" class="ibtn" id="bReset" title="Reset view & filters (R)"><i data-icon="reset"></i>Reset</button>
+        <button type="button" class="ibtn" id="bScenario" aria-pressed="false" title="Presenter scenarios (W)"><i data-icon="flask"></i>Scenarios</button>
       </div>
       <div class="scrub" id="scrub">
-        <span><span class="live-dot"></span><span id="scrubMode">LIVE</span></span>
+        <span class="st"><span class="live-dot"></span><span id="scrubMode">LIVE</span><span class="stale" id="scrubStale"></span></span>
         <span>−24h</span>
-        <input type="range" id="scrubRange" min="0" max="1440" step="1" value="1440" aria-label="Replay last 24 hours">
+        <div class="tl">
+          <svg id="tlSvg" aria-hidden="true"></svg>
+          <div class="tlh" id="tlHover"><span></span></div>
+          <input type="range" id="scrubRange" min="0" max="1440" step="1" value="1440" aria-label="Replay last 24 hours — drag or use arrow keys">
+          <div id="tlMarks" aria-label="Campaign markers"></div>
+        </div>
         <span>now</span>
         <span class="lbl" id="scrubLbl">--:-- GST</span>
       </div>
-      <div id="focusChip"><span id="focusLbl"></span><button type="button" id="focusClear" aria-label="Clear focus">✕</button></div>
+      <div id="chips" class="chips" aria-label="Active filters"></div>
     </form>
+
+    <section id="scenario" class="ov panel" aria-label="Presenter scenarios">
+      <div class="ph"><span class="en">Scenarios</span><span class="ar" lang="ar">سيناريوهات</span><button type="button" class="x" id="scClose" aria-label="Close scenarios"><i data-icon="close"></i></button></div>
+      <div class="sc-list" id="scList"></div>
+      <div class="sc-rate"><span>Attack rate</span><input type="range" id="scRate" min="-2" max="2" step="0.25" value="0" aria-label="Simulated attack rate multiplier"><b id="scRateLbl">×1.0</b></div>
+      <div class="sc-note">Injected events are simulated and marked in the feed</div>
+    </section>
 
     <div id="sceneCaption" class="ov"><span class="en" id="sceneEn">Global Threatscape</span><span class="ar" lang="ar" id="sceneAr">المشهد العالمي</span><div class="prog"><i id="sceneProg"></i></div></div>
 
@@ -792,8 +973,35 @@ html[data-holo="on"] #holo{display:block}
     <span class="tag"><span lang="ar">صنع في الإمارات</span> | Built in the UAE</span>
     <span class="chip vision">✦ Vision 2031 — Secure Digital Nation</span>
     <span class="chip sim">⚠ Simulated data for demonstration — not real statistics</span>
-    <span class="keys"><kbd>Space</kbd> pause · <kbd>F</kbd> fullscreen · <kbd>R</kbd> reset · <kbd>1</kbd>–<kbd>6</kbd> categories · <kbd>G</kbd> globe · <kbd>O</kbd> orbital · <kbd>H</kbd> holo · <kbd>M</kbd> sound</span>
+    <span class="keys"><button type="button" id="bKeys"><kbd>?</kbd> all shortcuts</button> · <kbd>Ctrl</kbd>+<kbd>K</kbd> search · <kbd>Space</kbd> pause · <kbd>R</kbd> reset · <kbd>W</kbd> scenarios</span>
   </footer>
+</div>
+
+<!-- v2.1: incident inspector / country dossier (slide-over) -->
+<aside id="inspector" role="dialog" aria-modal="false" aria-labelledby="insTitle" aria-hidden="true">
+  <div class="ins-h">
+    <div class="t"><span class="en" id="insTitle">Incident</span><span class="ar" lang="ar" id="insTitleAr">حادث</span></div>
+    <button type="button" class="ibtn x" id="insClose" aria-label="Close inspector (Esc)"><i data-icon="close"></i>Close</button>
+  </div>
+  <div class="ins-b" id="insBody"></div>
+</aside>
+
+<!-- v2.1: command palette -->
+<div id="palette" class="ovl" role="dialog" aria-modal="true" aria-label="Search and commands">
+  <div class="pal">
+    <div class="in"><i data-icon="search"></i><input id="palInput" type="text" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" placeholder="Jump to a country, actor, Emirate, category or command…" autocomplete="off" spellcheck="false"></div>
+    <ul id="palList" role="listbox"></ul>
+    <div class="hint"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> run</span><span><kbd>Esc</kbd> close</span><span><kbd>?</kbd> shortcuts</span></div>
+  </div>
+</div>
+
+<!-- v2.1: keyboard shortcuts sheet -->
+<div id="keysSheet" class="ovl" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="pal keys">
+    <div class="ph"><span class="en">Keyboard shortcuts</span><span class="ar" lang="ar">اختصارات لوحة المفاتيح</span></div>
+    <div class="keys-grid" id="keysGrid"></div>
+    <div class="hint" style="padding:.6rem 0 0"><span><kbd>Esc</kbd> close</span></div>
+  </div>
 </div>
 
 <noscript><p style="color:#F4F4F2;padding:2rem">This dashboard requires JavaScript.</p></noscript>
@@ -1114,7 +1322,7 @@ function makeEvent(ts, w = 1) {
   let dst;
   if (surge && surge.cat === cat.key && rng() < .6) dst = pickW(TARGETS.filter(c => c.region === surge.region), c => c.dstW) || pickW(TARGETS, c => c.dstW);
   else dst = rng() < CONFIG.uaeShareOfTargets ? countries.ARE : pickW(TARGETS, c => c.dstW);
-  if (surge && surge.cat === cat.key && surge.region === 'GCC' && rng() < .3) dst = countries.ARE;
+  if (surge && surge.cat === cat.key && surge.region === 'GCC' && rng() < (surge.uaeShare ?? .3)) dst = countries.ARE;
   let src; do { src = pickW(SOURCES, c => c.srcW); } while (src === dst);
   let sev = 1 + pickIdx(cat.sev);
   if (surge && surge.cat === cat.key) sev = Math.min(5, sev + 1);
@@ -1209,16 +1417,36 @@ const state = {
   cats: new Set(CATEGORIES.map(c => c.key)), minSev: 1, uaeOnly: false, blockedOnly: false, focus: null,
   replay: false, replayT: 0, globe: false, rotate: !reduced, globeRot: [-54, -22], rotTarget: null,
   zt: d3.zoomIdentity, simulate: CONFIG.simulate, simNow: 0,
-  orbital: false, holo: CONFIG.holoDefault, sound: false
+  orbital: false, holo: CONFIG.holoDefault, sound: false,
+  // v2.1 cross-filters (null = off) and transient hover brushing
+  maxSev: 5, stage: null, actor: null, sector: null, node: null, rateMul: 1, selected: null,
+  hover: { country: null, actor: null, sector: null, stage: null, node: null, arc: null }
 };
+const ALL_CATS = () => new Set(CATEGORIES.map(c => c.key));
 function passes(e) {
   if (!state.cats.has(e.category)) return false;
-  if (e.severity < state.minSev) return false;
+  if (e.severity < state.minSev || e.severity > state.maxSev) return false;
   if (state.uaeOnly && e.dst !== 'ARE') return false;
   if (state.blockedOnly && !e.blocked) return false;
   if (state.focus && e.src !== state.focus && e.dst !== state.focus) return false;
+  if (state.stage && e.stage !== state.stage) return false;
+  if (state.actor && e.actor !== state.actor) return false;
+  if (state.sector && e.sector !== state.sector) return false;
+  if (state.node && e.dstNode !== state.node) return false;
   return true;
 }
+// Hover brushing: arcs / tokens / links that don't match the hovered entity are dimmed (never removed)
+const hoverActive = () => { const h = state.hover; return !!(h.country || h.actor || h.sector || h.stage || h.node); };
+function hoverMatch(e) {
+  const h = state.hover;
+  if (h.country && e.src !== h.country && e.dst !== h.country) return false;
+  if (h.actor && e.actor !== h.actor) return false;
+  if (h.sector && e.sector !== h.sector) return false;
+  if (h.stage && e.stage !== h.stage) return false;
+  if (h.node && e.dstNode !== h.node) return false;
+  return true;
+}
+function setHover(key, val) { if (state.hover[key] === val) return; state.hover[key] = val; if (lastStats) updateConstellation(lastStats); }
 const nowT = () => state.replay ? state.replayT : Date.now();
 function getWindow() {
   const t1 = nowT();
@@ -1236,6 +1464,8 @@ const vfxCanvas = $('vfx'), vctx = vfxCanvas.getContext('2d');       // Higgsfie
 const bloomCanvas = $('bloom'), bctx = bloomCanvas.getContext('2d'); // downscaled copy of the arcs, CSS-blurred
 const orbital = {};                                                    // Three.js Orbital view (filled lazily)
 const tooltip = $('tooltip');
+let hotCountry = null;        // country currently under the pointer (so its tooltip can return after an arc hover)
+let lastEventAt = 0;          // wall-clock time of the last event pushed (live/stale indicator)
 
 // Animated counters
 const counters = [];
@@ -1266,8 +1496,42 @@ function setLedger(v) {
   ledger.el.setAttribute('aria-label', 'Estimated damage prevented ' + s);
 }
 
-/* --- v2: Mashrabiya texture layer in every panel --- */
-document.querySelectorAll('.panel').forEach(p => { const t = document.createElement('div'); t.className = 'tex'; p.prepend(t); });
+/* --- v2: Mashrabiya texture layer in every panel (+ v2.1 cursor spotlight layer) --- */
+document.querySelectorAll('.panel').forEach(p => {
+  const t = document.createElement('div'); t.className = 'tex'; p.prepend(t);
+  const s = document.createElement('div'); s.className = 'spot'; p.prepend(s);
+});
+let spotRaf = 0;
+$('app').addEventListener('pointermove', ev => {
+  if (reduced || state.mode === 'soc' || spotRaf) return;
+  const p = ev.target.closest && ev.target.closest('.panel'); if (!p) return;
+  spotRaf = requestAnimationFrame(() => {
+    spotRaf = 0; const r = p.getBoundingClientRect();
+    p.style.setProperty('--mx', (ev.clientX - r.left).toFixed(0) + 'px'); p.style.setProperty('--my', (ev.clientY - r.top).toFixed(0) + 'px');
+  });
+});
+
+/* --- v2.1: inline SVG icons (same 1.8 stroke language as the category icons; replaces emoji glyphs) --- */
+const ICONS = {
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  orbit: '<circle cx="12" cy="12" r="4.2"/><path d="M18.9 6.6c2.4 3 2 7-1 9.6s-8.6 3-12.4.4S1.4 9.3 3.5 6.6"/><circle cx="19" cy="5.5" r="1.4" fill="currentColor" stroke="none"/>',
+  rotate: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4.6h-4.6"/>',
+  holo: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M3 14.5h18"/>',
+  soundOn: '<path d="M4 10v4h3l4 3.5v-11L7 10z"/><path d="M15 9.5a3.5 3.5 0 0 1 0 5M17.6 7a7 7 0 0 1 0 10"/>',
+  soundOff: '<path d="M4 10v4h3l4 3.5v-11L7 10z"/><path d="M16 9.5l4.5 5M20.5 9.5l-4.5 5"/>',
+  pause: '<path d="M8.5 5v14M15.5 5v14"/>',
+  play: '<path d="M7.5 4.5v15l12-7.5z"/>',
+  reset: '<path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4.6h4.6"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  flask: '<path d="M9 3h6M10 3v6l-5.5 9a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M7.5 15h9"/>',
+  target: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  replay: '<path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4.6h4.6"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/>',
+  filter: '<path d="M4 5h16l-6 7v6l-4 2v-8z"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'
+};
+const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+document.querySelectorAll('[data-icon]').forEach(i => { i.outerHTML = icon(i.dataset.icon); });
 
 /* --- v2: video helpers (WebM + MP4 fallback, paused when hidden) --- */
 function setVideoSources(v, a) {
@@ -1318,6 +1582,18 @@ $('legendCats').innerHTML = CATEGORIES.map(c => `<span><i class="sw" style="back
   $('buckets').innerHTML = DAMAGE_BUCKETS.map((b, i) => `<div class="bk"><span>${b.label}</span><b id="bk${i}">0</b></div>`).join('');
 })();
 const matrixCells = [...document.querySelectorAll('#matrix .cell')];
+// v2.1: a cell is a category × severity filter (click again to clear)
+const cellSelected = el => { const c = CATEGORIES[+el.dataset.c].key, s = +el.dataset.s + 1; return state.cats.size === 1 && state.cats.has(c) && state.minSev === s && state.maxSev === s; };
+matrixCells.forEach(el => {
+  el.setAttribute('role', 'button'); el.tabIndex = 0;
+  const act = () => {
+    if (cellSelected(el)) { state.cats = ALL_CATS(); state.minSev = 1; state.maxSev = 5; }
+    else { state.cats = new Set([CATEGORIES[+el.dataset.c].key]); state.minSev = state.maxSev = +el.dataset.s + 1; }
+    onFilterChange();
+  };
+  el.addEventListener('click', act);
+  el.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); act(); } });
+});
 
 /* =====================================================================
    MAP (SVG for geography & labels, canvas for arcs)
@@ -1338,7 +1614,7 @@ const gNodes = gZoom.append('g');
 const gFronts = gZoom.append('g').attr('class', 'fronts');
 const gRing = gZoom.append('g').attr('id', 'shieldRing');
 svg.select('defs').append('linearGradient').attr('id', 'frontGrad').html('<stop offset="0" stop-color="#EF3340"/><stop offset=".5" stop-color="#E8C45A"/><stop offset="1" stop-color="#EF3340"/>');
-let world = [], uaeFeature = null, fitTarget = null;
+let world = [], uaeFeature = null, fitTarget = null, geoMissing = false;
 let projection, path, projVersion = 0, W = 0, H = 0, dpr = 1;
 const graticule = d3.geoGraticule10();
 
@@ -1368,6 +1644,7 @@ function renderMap() {
 function updateNodeScale() {
   const k = state.zt.k;
   gNodes.selectAll('circle.em-node').attr('r', 2.2 / k);
+  gNodes.selectAll('circle.em-hit').attr('r', 9 / k);
   gNodes.selectAll('text.em-label').attr('font-size', 11 / k).attr('dx', 4 / k).attr('dy', 3.5 / k)
     .style('display', k >= 3.5 ? null : 'none');
   if (uaeFeature) uaeHalo.attr('r', 30 / Math.sqrt(k));
@@ -1416,19 +1693,28 @@ async function loadWorld() {
     fitTarget = { type:'FeatureCollection', features: world.filter(f => f.id !== '010') }; // exclude Antarctica from fit
   } catch (err) {
     console.warn('[threatscape] world geometry unavailable — running without country shapes', err);
+    geoMissing = true;
     const m = $('mapMsg'); m.style.display = 'grid';
     m.innerHTML = '<div>World geometry could not be loaded (offline?).<br>Arcs and panels continue on a graticule.</div>';
   }
   gCountries.selectAll('path').data(world, d => d.id).join('path')
     .attr('class', d => 'country' + (d.id === '784' ? ' uae' : ''))
-    .on('mouseenter', function (ev, d) { d3.select(this).classed('hot', true).raise(); showTooltip(ev, d); })
-    .on('mousemove', (ev, d) => moveTooltip(ev))
-    .on('mouseleave', function () { d3.select(this).classed('hot', false); hideTooltip(); })
-    .on('click', (ev, d) => { const code = byNumeric[d.id]; if (code) setFocus(code === state.focus ? null : code, d); });
-  const em = gNodes.selectAll('g.em').data(EMIRATES).join('g').attr('class', 'em');
+    .on('mouseenter', function (ev, d) { d3.select(this).classed('hot', true).raise(); hotCountry = { ev, d }; setHover('country', byNumeric[d.id] || null); if (!state.hover.arc) showTooltip(ev, d); })
+    .on('mousemove', (ev, d) => { if (hotCountry) hotCountry.ev = ev; if (!state.hover.arc) moveTooltip(ev); })
+    .on('mouseleave', function () { d3.select(this).classed('hot', false); hotCountry = null; setHover('country', null); if (!state.hover.arc) hideTooltip(); })
+    .on('click', (ev, d) => {
+      if (state.hover.arc) return; // the arc click (capture) already opened the inspector
+      const code = byNumeric[d.id]; if (!code) return;
+      const next = code === state.focus ? null : code;
+      setFocus(next, d); if (next) openInspector('country', next); else closeInspector();
+    });
+  const em = gNodes.selectAll('g.em').data(EMIRATES).join('g').attr('class', 'em')
+    .on('click', (ev, d) => { ev.stopPropagation(); toggleNode(d.key); })
+    .on('mouseenter', (ev, d) => setHover('node', d.key)).on('mouseleave', () => setHover('node', null));
+  em.append('circle').attr('class', 'em-hit');
   em.append('circle').attr('class', 'em-node');
   em.append('text').attr('class', 'em-label').text(d => d.en);
-  em.append('title').text(d => `${d.en} · ${d.ar}`);
+  em.append('title').text(d => `${d.en} · ${d.ar} — click to isolate`);
   buildInset();
   resize();
 }
@@ -1445,13 +1731,24 @@ function buildInset() {
   isv.append('polygon').attr('class', 'hexring').attr('points', hex.map(p => p.join(',')).join(' '));
   isv.append('path').attr('class', 'uae-shape').attr('d', ipath(feat));
   const n = isv.selectAll('g.inode').data(EMIRATES).join('g').attr('class', 'inode')
-    .attr('transform', d => `translate(${ip([d.lng, d.lat])})`);
+    .attr('transform', d => `translate(${ip([d.lng, d.lat])})`)
+    .attr('role', 'button').attr('tabindex', 0).attr('aria-label', d => `${d.en}: isolate incidents aimed at this Emirate`)
+    .on('click', (ev, d) => toggleNode(d.key))
+    .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggleNode(d.key); } })
+    .on('mouseenter', (ev, d) => setHover('node', d.key)).on('mouseleave', () => setHover('node', null));
+  n.append('circle').attr('class', 'hit').attr('r', 9).attr('fill', 'transparent');
   n.append('circle').attr('class', 'node').attr('r', 3).attr('id', d => 'in-' + d.key);
-  n.append('title').text(d => `${d.en} · ${d.ar}`);
+  n.append('title').text(d => `${d.en} · ${d.ar} — click to isolate`);
   // Labels offset to avoid overlap on the crowded northern coast
   const off = { AUH:[-6,12,'end'], DXB:[-6,9,'end'], SHJ:[-6,-1,'end'], AJM:[-6,-12,'end'], UAQ:[6,6,'start'], RAK:[6,-4,'start'], FUJ:[6,10,'start'] };
   n.append('text').attr('class', 'nlabel').text(d => d.en)
     .attr('x', d => off[d.key][0]).attr('y', d => off[d.key][1]).attr('text-anchor', d => off[d.key][2]);
+  n.append('text').attr('class', 'ncount').attr('y', -7).text('0');
+}
+function toggleNode(key) {
+  if (state.node === key) state.node = null;
+  else { state.node = key; state.uaeOnly = true; }
+  onFilterChange();
 }
 function flashNode(key) {
   const el = document.getElementById('in-' + key);
@@ -1466,9 +1763,9 @@ const arcs = [];
 const impacts = [];
 const GREEN_RGB = hexRgb(CONFIG.colors.greenBright), GOLD_RGB = hexRgb(CONFIG.colors.gold);
 
-function spawnArc(e) {
-  if (!passes(e)) return;
-  if (reduced && Math.random() > CONFIG.reducedMotionSpawnFactor) return;
+function spawnArc(e, force = false) {
+  if (!force && !passes(e)) return;
+  if (!force && reduced && Math.random() > CONFIG.reducedMotionSpawnFactor) return;
   const s = countries[e.src], d = countries[e.dst];
   if (!s || !d) return;
   if (state.orbital) { if (orbital.spawn) orbital.spawn(e, s, d); return; }
@@ -1577,24 +1874,27 @@ function drawCanvas() {
   ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * x, dpr * y);
   ctx.globalCompositeOperation = 'lighter';
   ctx.lineCap = 'round';
-  const N = CONFIG.arcSamples, trail = CONFIG.arcTrail;
+  const N = CONFIG.arcSamples, trail = CONFIG.arcTrail, dimming = hoverActive(), hov = state.hover.arc;
   for (let i = arcs.length - 1; i >= 0; i--) {
     const a = arcs[i];
     const head = Math.min(a.p, a.end), post = Math.max(0, a.p - a.end);
     const tail = Math.max(0, head - trail + post * 1.6);
     if (a.p >= a.end && !a.landed) land(a);
-    if (tail >= head) { arcs.splice(i, 1); continue; }
+    if (tail >= head) { arcs.splice(i, 1); if (hov === a) state.hover.arc = null; continue; }
     // colour: category, shifting to green as a UAE-bound arc reaches the shield
     let rgb = a.rgb;
     if (a.shield && head > .7) rgb = mixRgb(a.rgb, GREEN_RGB, clamp((head - .7) / (a.end - .7), 0, 1));
+    // hover brushing: arcs outside the hovered country / actor / sector / stage / Emirate fade back
+    const al = (a === hov || a.e.id === state.selected) ? 1 : dimming && !hoverMatch(a.e) ? .2 : 1;
     const pts = [];
     for (let j = 0; j <= N; j++) pts.push(arcPoint(a, tail + (head - tail) * j / N));
     const p0 = pts.find(Boolean), p1 = pts[N];
+    a.hx = null;
     if (!p0) continue;
     const gEnd = p1 || pts.filter(Boolean).pop();
     const grad = ctx.createLinearGradient(p0[0], p0[1], gEnd[0], gEnd[1]);
     grad.addColorStop(0, rgba(rgb, 0));
-    grad.addColorStop(1, rgba(rgb, .9));
+    grad.addColorStop(1, rgba(rgb, .9 * al));
     ctx.strokeStyle = grad;
     ctx.lineWidth = a.w / k;
     ctx.beginPath();
@@ -1602,10 +1902,15 @@ function drawCanvas() {
     for (const p of pts) { if (!p) { pen = false; continue; } if (pen) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); pen = true; } }
     ctx.stroke();
     if (!a.landed && p1) {
-      ctx.fillStyle = rgba(rgb, .18);
+      a.hx = p1[0] * k + x; a.hy = p1[1] * k + y;   // screen position of the head, for pointer hit-testing
+      ctx.fillStyle = rgba(rgb, .18 * al);
       ctx.beginPath(); ctx.arc(p1[0], p1[1], (a.w * 2.6 + 2) / k, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = rgba(mixRgb(rgb, [255, 255, 255], .45), .95);
+      ctx.fillStyle = rgba(mixRgb(rgb, [255, 255, 255], .45), .95 * al);
       ctx.beginPath(); ctx.arc(p1[0], p1[1], (a.w * .7 + .8) / k, 0, 6.2832); ctx.fill();
+      if (a === hov || a.e.id === state.selected) {   // hovered / inspected arc: gold ring + white core
+        ctx.strokeStyle = rgba(a === hov ? GOLD_RGB : [255, 255, 255], .95); ctx.lineWidth = 1.4 / k;
+        ctx.beginPath(); ctx.arc(p1[0], p1[1], 7 / k, 0, 6.2832); ctx.stroke();
+      }
     }
   }
   // Impacts: pulses on arrival, gold hexagonal ripple for UAE intercepts
@@ -1713,6 +2018,7 @@ function computeCampaigns() {
   const nextKeys = new Set(next.map(c => c.key));
   for (const c of next) if (!campaignsSeen.has(c.key)) {
     campaignsSeen.set(c.key, c);
+    tlMarkers.push({ ts: nowT(), name: c.name, cat: c.cat, region: c.region });
     addFeedNotice(`${c.name}: ${CAT[c.cat].en} campaign against ${REGION_NAME[c.region][0]} (simulated)`, `حملة ${CAT[c.cat].ar} تستهدف ${REGION_NAME[c.region][1]}`);
   } else campaignsSeen.set(c.key, c);
   for (const [k, c] of campaignsSeen) if (!nextKeys.has(k)) {
@@ -1762,8 +2068,16 @@ function renderFronts() {
 /* =====================================================================
    v2 — KILL-CHAIN LANE (canvas tokens)
    ===================================================================== */
-$('kcStages').innerHTML = KILL_CHAIN.map((s, i) => `<div class="kc-st"><span class="en">${i + 1} · ${s.en}</span><span class="ar" lang="ar">${s.ar}</span><span class="n mono">0</span></div>`).join('');
+$('kcStages').innerHTML = KILL_CHAIN.map((s, i) => `<div class="kc-st" role="button" tabindex="0" data-stage="${i + 1}" title="Click to show only attacks stopped at this stage"><span class="en">${i + 1} · ${s.en}</span><span class="ar" lang="ar">${s.ar}</span><span class="n mono">0</span></div>`).join('');
 const kcStageEls = [...document.querySelectorAll('#kcStages .n')];
+const kcStageDivs = [...document.querySelectorAll('#kcStages .kc-st')];
+kcStageDivs.forEach(el => {
+  const st = +el.dataset.stage, act = () => { state.stage = state.stage === st ? null : st; onFilterChange(); };
+  el.addEventListener('click', act);
+  el.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); act(); } });
+  el.addEventListener('mouseenter', () => setHover('stage', st));
+  el.addEventListener('mouseleave', () => setHover('stage', null));
+});
 const kcCanvas = $('kcCanvas'), kcx = kcCanvas.getContext('2d');
 const kcTokens = [], kcBursts = [];
 let kcW = 0, kcH = 0;
@@ -1781,16 +2095,18 @@ function drawKillChain(dt) {
   kcx.setTransform(dpr, 0, 0, dpr, 0, 0);
   kcx.clearRect(0, 0, kcW, kcH);
   kcx.fillStyle = 'rgba(201,162,39,.06)'; kcx.fillRect(0, kcH * .28, kcW, kcH * .54);
+  const hiStage = state.hover.stage || state.stage;
+  if (hiStage) { kcx.fillStyle = 'rgba(201,162,39,.09)'; kcx.fillRect((hiStage - 1) / 7 * kcW, 0, kcW / 7, kcH); }
   kcx.globalCompositeOperation = 'lighter';
-  const step = state.paused ? 0 : dt / 1000;
+  const step = state.paused ? 0 : dt / 1000, dimming = hoverActive();
   for (let i = kcTokens.length - 1; i >= 0; i--) {
     const t = kcTokens[i];
     t.x = Math.min(t.stop, t.x + t.speed * step);
-    const px = t.x * kcW, py = t.y * kcH;
+    const px = t.x * kcW, py = t.y * kcH, al = dimming && !hoverMatch(t.e) ? .18 : 1;
     const g = kcx.createLinearGradient(px - 40, py, px, py);
-    g.addColorStop(0, rgba(t.rgb, 0)); g.addColorStop(1, rgba(t.rgb, .8));
+    g.addColorStop(0, rgba(t.rgb, 0)); g.addColorStop(1, rgba(t.rgb, .8 * al));
     kcx.strokeStyle = g; kcx.lineWidth = 1.4; kcx.beginPath(); kcx.moveTo(Math.max(0, px - 40), py); kcx.lineTo(px, py); kcx.stroke();
-    kcx.fillStyle = rgba(mixRgb(t.rgb, [255, 255, 255], .4), .95); kcx.beginPath(); kcx.arc(px, py, 2.2, 0, 6.2832); kcx.fill();
+    kcx.fillStyle = rgba(mixRgb(t.rgb, [255, 255, 255], .4), .95 * al); kcx.beginPath(); kcx.arc(px, py, 2.2, 0, 6.2832); kcx.fill();
     if (t.x >= t.stop) { kcBursts.push({ x: px, y: py, blocked: t.e.blocked, born: state.simNow }); kcTokens.splice(i, 1); }
   }
   for (let i = kcBursts.length - 1; i >= 0; i--) {
@@ -1823,16 +2139,26 @@ function buildConstellation() {
   const gLinks = actorSvg.append('g');
   actorLayout = { w, h, sec, act, gLinks, iconS };
   // sector icons (Higgsfield line icons, black removed with screen blend)
-  const sg = actorSvg.append('g').selectAll('g').data(sec).join('g').attr('transform', d => `translate(${d.x},${d.y})`);
+  const sg = actorSvg.append('g').selectAll('g').data(sec).join('g').attr('class', 'sec-g').attr('transform', d => `translate(${d.x},${d.y})`)
+    .attr('role', 'button').attr('tabindex', 0).attr('aria-label', d => `${d.en} sector: filter incidents`)
+    .on('click', (ev, d) => { state.sector = state.sector === d.key ? null : d.key; onFilterChange(); })
+    .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); state.sector = state.sector === d.key ? null : d.key; onFilterChange(); } })
+    .on('mouseenter', (ev, d) => setHover('sector', d.key)).on('mouseleave', () => setHover('sector', null));
+  sg.append('circle').attr('class', 'sec-ring').attr('r', iconS / 2 + 4);
   sg.append('image').attr('class', 'sec-icon').attr('href', d => ASSETS.sectorIcons[d.key])
     .attr('x', -iconS / 2).attr('y', -iconS / 2).attr('width', iconS).attr('height', iconS);
   sg.append('text').attr('class', 'sec-label').attr('y', iconS / 2 + 10).text(d => d.en);
-  sg.append('title').text(d => `${d.en} · ${d.ar}`);
+  sg.append('title').text(d => `${d.en} · ${d.ar} — click to filter`);
   // actor star clusters (seeded shapes)
-  const ag = actorSvg.append('g').selectAll('g').data(act).join('g').attr('class', 'act-g').attr('transform', d => `translate(${d.x},${d.y})`);
+  const ag = actorSvg.append('g').selectAll('g').data(act).join('g').attr('class', 'act-g').attr('transform', d => `translate(${d.x},${d.y})`)
+    .attr('role', 'button').attr('tabindex', 0).attr('aria-label', d => `${d.en}: filter incidents attributed to this group`)
+    .on('click', (ev, d) => { state.actor = state.actor === d.key ? null : d.key; onFilterChange(); })
+    .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); state.actor = state.actor === d.key ? null : d.key; onFilterChange(); } })
+    .on('mouseenter', (ev, d) => setHover('actor', d.key)).on('mouseleave', () => setHover('actor', null));
   ag.each(function (d) {
     const rr = mulberry32(hashStr(d.key)), pts = d3.range(5 + Math.floor(rr() * 3)).map(() => [(rr() - .5) * 34, (rr() - .5) * d.sy]);
     const g = d3.select(this);
+    g.append('rect').attr('class', 'act-ring').attr('x', -24).attr('y', -d.sy / 2 - 6).attr('width', 48).attr('height', d.sy + 24).attr('rx', 6);
     g.append('path').attr('class', 'act-line').attr('d', 'M' + pts.join('L')).attr('stroke', d.color);
     g.selectAll('circle').data(pts).join('circle').attr('class', 'act-star').attr('cx', p => p[0]).attr('cy', p => p[1])
       .attr('r', (p, i) => i === 0 ? 2.4 : 1.2 + rr()).attr('fill', (p, i) => i === 0 ? d.color : '#fff')
@@ -1847,21 +2173,25 @@ function updateConstellation(S) {
   const links = [];
   for (const a of act) for (const s of sec) { const v = S.actSec.get(a.key + '|' + s.key); if (v) links.push({ a, s, v, id: a.key + s.key }); }
   const max = d3.max(links, l => l.v) || 1;
+  const hA = state.hover.actor || state.actor, hS = state.hover.sector || state.sector;
+  const linkOn = l => (!hA || l.a.key === hA) && (!hS || l.s.key === hS);
   gLinks.selectAll('path').data(links.filter(l => l.v / max > .04), d => d.id).join('path').attr('class', 'act-link')
     .attr('d', l => `M${l.a.x},${l.a.y + l.a.sy / 2 + 13}C${l.a.x},${(l.a.y + l.s.y) / 2} ${l.s.x},${(l.a.y + l.s.y) / 2} ${l.s.x},${l.s.y - actorLayout.iconS / 2 - 2}`)
-    .attr('stroke', l => l.a.color).attr('stroke-opacity', l => .12 + .55 * l.v / max).attr('stroke-width', l => .4 + 2.4 * l.v / max);
+    .attr('stroke', l => l.a.color).attr('stroke-opacity', l => (.12 + .55 * l.v / max) * (linkOn(l) ? 1 : .15)).attr('stroke-width', l => .4 + 2.4 * l.v / max);
   const amax = d3.max(Object.values(S.actVol)) || 1;
-  actorSvg.selectAll('g.act-g').attr('opacity', d => .45 + .55 * ((S.actVol[d.key] || 0) / amax));
+  actorSvg.selectAll('g.act-g').attr('opacity', d => .45 + .55 * ((S.actVol[d.key] || 0) / amax))
+    .classed('sel', d => d.key === state.actor).classed('dim', d => !!hA && d.key !== hA);
+  actorSvg.selectAll('g.sec-g').classed('sel', d => d.key === state.sector).classed('dim', d => !!hS && d.key !== hS);
 }
 
 /* =====================================================================
    v2 — SEVERITY SHOCKWAVE + ALERT STING (WebAudio, muted by default)
    ===================================================================== */
 let lastShockAt = -1e9, bannerTimer = 0, audioCtx = null;
-function checkCritical(e) {
-  if (e.severity < 5 || e.blocked || state.mode === 'briefing' || state.replay || !passes(e)) return;
+function checkCritical(e, force = false) {
+  if (!force && (e.severity < 5 || e.blocked || state.mode === 'briefing' || state.replay || !passes(e))) return;
   const t = performance.now();
-  if (t - lastShockAt < CONFIG.shockwaveCooldownMs || t < shockArmedAt) return;
+  if (!force && (t - lastShockAt < CONFIG.shockwaveCooldownMs || t < shockArmedAt)) return;
   lastShockAt = t;
   const c = CAT[e.category], d = countries[e.dst];
   $('critEn').textContent = `${c.en.split(' / ')[0]} impact on ${d.name}${e.dstNode ? ' (' + EMIRATE[e.dstNode].en + ')' : ''} · est. ${fmtUSD(e.damageUSD)}`;
@@ -2098,7 +2428,9 @@ function addFeedLine(e, animate = true) {
   div.className = 'fl' + (animate && !reduced ? ' enter' : '');
   div.style.setProperty('--c', CAT[e.category].color);
   div.innerHTML = feedHTML(e);
-  div.addEventListener('click', () => setFocus(e.dst === 'ARE' ? e.src : e.dst));
+  div.setAttribute('role', 'button'); div.tabIndex = 0; div.title = 'Open incident';
+  div.addEventListener('click', () => openInspector('incident', e));
+  div.addEventListener('keydown', ev => { if (ev.key === 'Enter') openInspector('incident', e); });
   feedEl.prepend(div);
   while (feedEl.children.length > CONFIG.feedMax) feedEl.lastChild.remove();
 }
@@ -2139,12 +2471,13 @@ function computeStats() {
   const src = new Map(), dst = new Map();
   const mat = CATEGORIES.map(() => SEVERITY.map(() => ({ n:0, dmg:0 })));
   const buckets = [0, 0, 0, 0, 0];
-  const actSec = new Map(), actVol = {}, kc = new Float64Array(7);
+  const actSec = new Map(), actVol = {}, kc = new Float64Array(7), nodes = {};
   for (let i = i0; i < i1; i++) {
     const e = events[i]; if (!passes(e)) continue;
     const w = e.w || 1, v = e.volume * w, dm = e.damageUSD * w;
     if (e.actor) { const k = e.actor + '|' + e.sector; actSec.set(k, (actSec.get(k) || 0) + v); actVol[e.actor] = (actVol[e.actor] || 0) + v; }
     if (e.stage) kc[e.stage - 1] += w;
+    if (e.dstNode && e.blocked) nodes[e.dstNode] = (nodes[e.dstNode] || 0) + w;
     const c = cat[e.category]; c.vol += v; c.n += w; c.dmg += dm; c.sev += e.severity * w;
     let s = src.get(e.src); if (!s) src.set(e.src, s = { code:e.src, vol:0, cats:{} });
     s.vol += v; s.cats[e.category] = (s.cats[e.category] || 0) + v;
@@ -2177,7 +2510,13 @@ function computeStats() {
     if (e.ts >= t1 - 15 * 6e4) { uN += w; if (e.blocked) uBlk += w; }
   }
   const ring = { rate: uN ? uBlk / uN : 1, pressure: u60 ? (u2 / 2) / (u60 / 60) : 1 };
-  return { t0, t1, cat, src, dst, mat, buckets, today, todayBlk, prevented, ring, actSec, actVol, kc, hiShare: n15 ? hi15 / n15 : 0 };
+  // v2.1 timeline: last 24h of wall-clock time (the scrubber's domain) in 144 ten-minute bins per category, filtered
+  const tl = CATEGORIES.map(() => new Float64Array(144)), now = Date.now(), tl0 = now - 864e5;
+  for (let i = bisectTs(tl0), iN = bisectTs(now); i < iN; i++) {
+    const e = events[i]; if (!passes(e)) continue;
+    tl[CAT[e.category].idx][Math.min(143, Math.floor((e.ts - tl0) / 6e5))] += e.volume * (e.w || 1);
+  }
+  return { t0, t1, cat, src, dst, mat, buckets, today, todayBlk, prevented, ring, actSec, actVol, kc, nodes, tl, hiShare: n15 ? hi15 / n15 : 0 };
 }
 
 const LEVELS = [
@@ -2189,10 +2528,13 @@ function domCat(cats) { let best = null, bv = -1; for (const k in cats) if (cats
 
 function renderRank(sel, rows, kind) {
   const max = d3.max(rows, r => r.vol) || 1;
+  d3.select(sel).select('.rrow-empty').remove();
+  if (!rows.length) d3.select(sel).append('div').attr('class', 'rrow-empty').text('— no incidents in this window');
   d3.select(sel).selectAll('.rrow').data(rows, d => d.code)
-    .join(enter => enter.append('div').attr('class', 'rrow')
+    .join(enter => enter.append('div').attr('class', 'rrow').attr('role', 'button').attr('tabindex', 0)
       .html('<span class="rk"></span><span class="flag"></span><span class="nm"></span><span class="val mono"></span><span></span><span></span><span class="bar"><i></i></span><span class="dom"></span>')
-      .on('click', (ev, d) => setFocus(d.code === state.focus ? null : d.code)))
+      .on('click', (ev, d) => { const next = d.code === state.focus ? null : d.code; setFocus(next); if (next) openInspector('country', next); else closeInspector(); })
+      .on('keydown', (ev, d) => { if (ev.key === 'Enter') { setFocus(d.code); openInspector('country', d.code); } }))
     .order()
     .each(function (d, i) {
       const c = countries[d.code], dc = CAT[domCat(d.cats)];
@@ -2264,6 +2606,17 @@ function renderPanels() {
   kcStageEls.forEach((el, i) => el.textContent = fmtCompact(S.kc[i]));
   updateConstellation(S);
   $('mxSub').textContent = `${windowLabel()}${state.focus ? ' · ' + countries[state.focus].name : ''} · cell = incidents, colour = cumulative damage`;
+  // v2.1: selection states, Emirate counts, timeline, empty state, open dossier
+  matrixCells.forEach(el => el.classList.toggle('sel', cellSelected(el)));
+  kcStageDivs.forEach(el => el.classList.toggle('sel', +el.dataset.stage === state.stage));
+  d3.select('#insetSvg').selectAll('g.inode').classed('sel', d => d.key === state.node).select('text.ncount').text(d => fmtCompact(S.nodes[d.key] || 0));
+  renderTimeline(S);
+  const total = CATEGORIES.reduce((a, c) => a + S.cat[c.key].n, 0), m = $('mapMsg');
+  if (!geoMissing) {
+    if (!total && !m.dataset.empty) { m.dataset.empty = '1'; m.style.display = 'grid'; m.innerHTML = '<div class="empty"><b>No incidents match these filters</b><span lang="ar">لا توجد حوادث مطابقة لهذه المرشحات</span><button type="button" class="ibtn" data-act="clear-filters">' + icon('reset') + 'Clear filters</button></div>'; }
+    else if (total && m.dataset.empty) { delete m.dataset.empty; m.style.display = 'none'; m.innerHTML = ''; }
+  }
+  if (ins.mode === 'country' && ins.el.classList.contains('open') && !ins.el.contains(document.activeElement)) renderInspector();
 }
 
 /* =====================================================================
@@ -2271,15 +2624,18 @@ function renderPanels() {
    ===================================================================== */
 function countryStats(code) {
   const [t0, t1] = getWindow();
-  const r = { inVol:0, inN:0, outVol:0, dmg:0, sevMax:0, sevSum:0, blk:0, cats:{} };
+  const r = { inVol:0, inN:0, outVol:0, dmg:0, sevMax:0, sevSum:0, blk:0, cats:{}, actors:{}, sectors:{} };
   for (let i = bisectTs(t0), i1 = bisectTs(t1); i < i1; i++) {
     const e = events[i];
-    if (!state.cats.has(e.category) || e.severity < state.minSev) continue;
+    if (!state.cats.has(e.category) || e.severity < state.minSev || e.severity > state.maxSev) continue;
+    if ((state.stage && e.stage !== state.stage) || (state.actor && e.actor !== state.actor) || (state.sector && e.sector !== state.sector)) continue;
     const w = e.w || 1;
     if (e.dst === code) {
       r.inVol += e.volume * w; r.inN += w; r.dmg += e.damageUSD * w; r.sevSum += e.severity * w;
       r.sevMax = Math.max(r.sevMax, e.severity); if (e.blocked) r.blk += w;
       r.cats[e.category] = (r.cats[e.category] || 0) + e.volume * w;
+      if (e.actor) r.actors[e.actor] = (r.actors[e.actor] || 0) + e.volume * w;
+      if (e.sector) r.sectors[e.sector] = (r.sectors[e.sector] || 0) + e.volume * w;
     } else if (e.src === code) r.outVol += e.volume * w;
   }
   return r;
@@ -2317,8 +2673,9 @@ function hideTooltip() { tooltip.classList.remove('show'); }
    INTERACTIONS
    ===================================================================== */
 function onFilterChange() {
-  // drop arcs that no longer pass, refresh panels/feed
-  for (let i = arcs.length - 1; i >= 0; i--) if (!passes(arcs[i].e)) arcs.splice(i, 1);
+  // drop arcs that no longer pass (except the one being inspected), refresh panels/feed
+  for (let i = arcs.length - 1; i >= 0; i--) if (!passes(arcs[i].e) && arcs[i].e.id !== state.selected) arcs.splice(i, 1);
+  if (ins.mode === 'country' && !state.focus) closeInspector();
   renderPanels(); rebuildFeed(); syncControls();
 }
 function syncControls() {
@@ -2327,16 +2684,16 @@ function syncControls() {
   $('fSev').value = state.minSev; $('fUae').checked = state.uaeOnly; $('fBlk').checked = state.blockedOnly;
   document.querySelectorAll('[data-win]').forEach(b => b.setAttribute('aria-pressed', b.dataset.win === state.window));
   $('bGlobe').setAttribute('aria-pressed', state.globe); $('bRotate').setAttribute('aria-pressed', state.rotate);
-  $('bPause').setAttribute('aria-pressed', state.paused); $('bPause').textContent = state.paused ? '▶ Play' : '❚❚ Pause';
+  $('bPause').setAttribute('aria-pressed', state.paused); $('bPause').innerHTML = state.paused ? icon('play') + 'Play' : icon('pause') + 'Pause';
   $('bOrbit').setAttribute('aria-pressed', state.orbital); $('bHolo').setAttribute('aria-pressed', state.holo);
-  $('bSound').setAttribute('aria-pressed', state.sound); $('bSound').textContent = state.sound ? '🔊 Sound' : '🔇 Sound';
+  $('bSound').setAttribute('aria-pressed', state.sound); $('bSound').innerHTML = (state.sound ? icon('soundOn') : icon('soundOff')) + 'Sound';
+  $('bScenario').setAttribute('aria-pressed', $('scenario').classList.contains('open'));
   gCountries.selectAll('path').classed('focus', d => byNumeric[d.id] && byNumeric[d.id] === state.focus);
-  const chip = $('focusChip');
-  chip.classList.toggle('show', !!state.focus);
-  if (state.focus) $('focusLbl').innerHTML = `Focus: <span class="flag">${countries[state.focus].flag}</span> ${esc(countries[state.focus].name)}`;
+  $('scrub').classList.toggle('paused', state.paused && !state.replay);
+  renderChips(); writeHash();
 }
 function isolateCategory(key) {
-  if (state.cats.size === 1 && state.cats.has(key)) state.cats = new Set(CATEGORIES.map(c => c.key));
+  if (state.cats.size === 1 && state.cats.has(key)) state.cats = ALL_CATS();
   else state.cats = new Set([key]);
   onFilterChange();
 }
@@ -2353,10 +2710,14 @@ function setFocus(code, feature) {
   } else if (!state.globe) resetZoom();
   onFilterChange();
 }
+function clearFilters() {
+  state.cats = ALL_CATS(); state.minSev = 1; state.maxSev = 5; state.uaeOnly = false; state.blockedOnly = false; state.focus = null;
+  state.stage = null; state.actor = null; state.sector = null; state.node = null;
+}
 function resetAll() {
-  state.cats = new Set(CATEGORIES.map(c => c.key)); state.minSev = 1; state.uaeOnly = false; state.blockedOnly = false; state.focus = null;
+  clearFilters();
   if (state.globe) state.rotTarget = [-54, -22]; else resetZoom();
-  exitReplay(false);
+  exitReplay(false); closeInspector();
   onFilterChange();
 }
 function setPaused(p) { state.paused = p; if (p) shieldVid.pause(); syncControls(); }
@@ -2383,6 +2744,12 @@ function updateScrub() {
   const now = Date.now(), t = nowT();
   if (document.activeElement !== $('scrubRange')) $('scrubRange').value = Math.round(1440 - (now - t) / 6e4);
   $('scrubLbl').textContent = fmtGstHM.format(t) + ' GST';
+  // live / paused / replay + staleness of the feed (matters once a real feed is plugged in)
+  $('scrubMode').textContent = state.replay ? 'REPLAY' : state.paused ? 'PAUSED' : 'LIVE';
+  const st = $('scrubStale');
+  if (state.replay || state.paused) { st.textContent = ''; st.classList.remove('old'); }
+  else { const ago = lastEventAt ? Math.max(0, now - lastEventAt) : null; st.textContent = ago == null ? '· no events' : ago < 1500 ? '· now' : ago < 6e4 ? `· ${Math.round(ago / 1000)}s ago` : `· ${Math.round(ago / 6e4)}m ago`; st.classList.toggle('old', ago == null || ago > 3e4); }
+  renderTimelineHead(); renderTlMarkers();
 }
 
 $('scrubRange').addEventListener('input', ev => {
@@ -2394,7 +2761,7 @@ $('fCat').addEventListener('change', ev => {
   const v = ev.target.value; if (v === 'custom') return;
   state.cats = new Set(v === 'all' ? CATEGORIES.map(c => c.key) : [v]); onFilterChange();
 });
-$('fSev').addEventListener('change', ev => { state.minSev = +ev.target.value; onFilterChange(); });
+$('fSev').addEventListener('change', ev => { state.minSev = +ev.target.value; if (state.maxSev < state.minSev) state.maxSev = 5; onFilterChange(); });
 $('fUae').addEventListener('change', ev => { state.uaeOnly = ev.target.checked; onFilterChange(); });
 $('fBlk').addEventListener('change', ev => { state.blockedOnly = ev.target.checked; onFilterChange(); });
 $('bGlobe').addEventListener('click', () => setGlobe(!state.globe));
@@ -2404,14 +2771,30 @@ $('bSound').addEventListener('click', () => setSound(!state.sound));
 $('bRotate').addEventListener('click', () => { state.rotate = !state.rotate; syncControls(); });
 $('bPause').addEventListener('click', () => setPaused(!state.paused));
 $('bReset').addEventListener('click', resetAll);
-$('focusClear').addEventListener('click', () => setFocus(null));
 $('bExport').addEventListener('click', exportPNG);
+$('bPalette').addEventListener('click', openPalette);
+$('bKeys').addEventListener('click', () => openKeys(true));
+$('bScenario').addEventListener('click', () => toggleScenario());
+$('scClose').addEventListener('click', () => toggleScenario(false));
+$('mapMsg').addEventListener('click', ev => { if (ev.target.closest('[data-act="clear-filters"]')) resetAll(); });
 document.querySelectorAll('.modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
+const inField = ev => !!(ev.target && ev.target.closest && ev.target.closest('input,select,textarea'));
 document.addEventListener('keydown', ev => {
   if ($('intro').classList.contains('run')) { ev.preventDefault(); stopIntro(); return; } // any key skips the intro
-  if (ev.target.closest('input,select,textarea') || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key.toLowerCase() === 'k') { ev.preventDefault(); openPalette(); return; }
+  if (ev.key === 'Escape') {
+    if ($('palette').classList.contains('open')) { closePalette(); return; }
+    if ($('keysSheet').classList.contains('open')) { openKeys(false); return; }
+    if (ins.el.classList.contains('open')) { closeInspector(); return; }
+    if ($('scenario').classList.contains('open')) { toggleScenario(false); return; }
+    if (state.focus && !inField(ev)) { setFocus(null); return; }
+    return;
+  }
+  if (inField(ev) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (ev.key === '?') { ev.preventDefault(); openKeys(); return; }
   const k = ev.key.toLowerCase();
+  if (k === 'w') { toggleScenario(); return; }
   if (k === 'o') { setOrbital(!state.orbital); return; }
   if (k === 'h') { setHolo(!state.holo); return; }
   if (k === 'm') { setSound(!state.sound); return; }
@@ -2436,13 +2819,13 @@ function focusGeoReset() { if (state.globe) state.rotTarget = [-54, -22]; else r
 function applyScene(i) {
   sceneIdx = i % SCENES.length; sceneStart = performance.now();
   const sc = SCENES[sceneIdx];
-  state.focus = null; state.uaeOnly = false; state.blockedOnly = false; state.minSev = 1;
+  clearFilters(); closeInspector();
   setOrbital(!!sc.orbital);
   if (sc.cat) {
     state.cats = new Set([sc.cat]); focusGeoReset();
     $('sceneEn').textContent = 'Spotlight — ' + CAT[sc.cat].en; $('sceneAr').textContent = CAT[sc.cat].ar;
   } else {
-    state.cats = new Set(CATEGORIES.map(c => c.key)); sc.apply();
+    sc.apply();
     $('sceneEn').textContent = sc.en; $('sceneAr').textContent = sc.ar;
   }
   onFilterChange();
@@ -2455,6 +2838,7 @@ document.addEventListener('mousemove', () => {
 function setMode(m) {
   prevMode = state.mode; state.mode = m;
   document.documentElement.dataset.mode = m;
+  closeInspector(); closePalette(); openKeys(false); if (m === 'briefing') toggleScenario(false);
   document.querySelectorAll('.modes button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
   if (m === 'soc') { exitReplay(false); state.window = 'live'; setHolo(true); applyScene(0); }
   else if (prevMode === 'soc') { setOrbital(false); resetAll(); }
@@ -2464,6 +2848,374 @@ function setMode(m) {
   }
   else if (prevMode === 'briefing') { stopIntro(); setPaused(false); }
   requestAnimationFrame(resize); // fonts change size per mode
+}
+
+/* =====================================================================
+   v2.1 — FILTER CHIPS (every active cross-filter is visible and removable)
+   ===================================================================== */
+function renderChips() {
+  const chips = [];
+  if (state.cats.size !== CATEGORIES.length) for (const k of state.cats) chips.push({ c: CAT[k].color, en: CAT[k].en.split(' / ')[0], ar: CAT[k].ar, clear() { if (state.cats.size > 1) state.cats.delete(k); else state.cats = ALL_CATS(); } });
+  if (state.minSev > 1 || state.maxSev < 5) chips.push({ en: state.minSev === state.maxSev ? `Severity ${state.minSev} · ${SEVERITY[state.minSev - 1].en}` : `Severity ${state.minSev}–${state.maxSev}`, ar: 'الخطورة', clear() { state.minSev = 1; state.maxSev = 5; } });
+  if (state.uaeOnly && !state.node) chips.push({ en: 'Targeting UAE', ar: 'يستهدف الإمارات', clear() { state.uaeOnly = false; } });
+  if (state.node) chips.push({ en: EMIRATE[state.node].en, ar: EMIRATE[state.node].ar, clear() { state.node = null; state.uaeOnly = false; } });
+  if (state.blockedOnly) chips.push({ en: 'Blocked only', ar: 'المصدودة فقط', c: CONFIG.colors.greenBright, clear() { state.blockedOnly = false; } });
+  if (state.focus) chips.push({ flag: countries[state.focus].flag, en: countries[state.focus].name, ar: 'تركيز', clear() { state.focus = null; if (!state.globe) resetZoom(); } });
+  if (state.stage) chips.push({ en: `Stopped at ${KILL_CHAIN[state.stage - 1].en}`, ar: KILL_CHAIN[state.stage - 1].ar, clear() { state.stage = null; } });
+  if (state.actor && ACTOR[state.actor]) chips.push({ c: ACTOR[state.actor].color, en: ACTOR[state.actor].en, ar: ACTOR[state.actor].ar, clear() { state.actor = null; } });
+  if (state.sector) { const s = SECTOR_LIST.find(x => x.key === state.sector); chips.push({ en: s ? s.en : state.sector, ar: s ? s.ar : '', clear() { state.sector = null; } }); }
+  const el = $('chips');
+  el.innerHTML = chips.map((c, i) => `<span class="chip-f" style="--c:${c.c || 'var(--gold)'}">${c.flag ? `<span class="flag">${c.flag}</span>` : '<i></i>'}${esc(c.en)}${c.ar ? ` <span class="ar" lang="ar">${esc(c.ar)}</span>` : ''}<button type="button" data-i="${i}" aria-label="Remove filter: ${esc(c.en)}">✕</button></span>`).join('')
+    + (chips.length > 1 ? `<button type="button" class="chip-f clear" data-i="all">Clear all <span class="ar" lang="ar">مسح الكل</span></button>` : '');
+  el.onclick = ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.i === 'all') { clearFilters(); if (!state.globe) resetZoom(); } else chips[+b.dataset.i].clear();
+    onFilterChange();
+  };
+}
+
+/* =====================================================================
+   v2.1 — TIMELINE BRUSH (24h stacked histogram under the replay slider)
+   ===================================================================== */
+const TL_W = 1000, TL_H = 32, tlMarkers = [];
+const tlSvg = d3.select('#tlSvg').attr('viewBox', `0 0 ${TL_W} ${TL_H}`).attr('preserveAspectRatio', 'none');
+const tlWin = tlSvg.append('rect').attr('class', 'tl-win').attr('y', 0).attr('height', TL_H);
+const tlAreas = tlSvg.append('g');
+tlSvg.append('line').attr('class', 'tl-base').attr('x1', 0).attr('x2', TL_W).attr('y1', TL_H - .5).attr('y2', TL_H - .5);
+const tlNow = tlSvg.append('line').attr('class', 'tl-now').attr('x1', TL_W - .5).attr('x2', TL_W - .5).attr('y1', 0).attr('y2', TL_H);
+const tlPlay = tlSvg.append('line').attr('class', 'tl-play').attr('y1', 0).attr('y2', TL_H).style('display', 'none');
+let tlTotals = new Float64Array(144);
+const tlArea = d3.area().x(d => d.data.i / 143 * TL_W).curve(d3.curveMonotoneX);
+function renderTimeline(S) {
+  const rows = d3.range(144).map(i => { const o = { i }; let t = 0; CATEGORIES.forEach(c => { o[c.key] = S.tl[c.idx][i]; t += S.tl[c.idx][i]; }); tlTotals[i] = t; return o; });
+  const series = d3.stack().keys(CATEGORIES.map(c => c.key))(rows);
+  const max = d3.max(series[series.length - 1], d => d[1]) || 1, y = v => TL_H - 1 - v / max * (TL_H - 3);
+  tlArea.y0(d => y(d[0])).y1(d => y(d[1]));
+  tlAreas.selectAll('path').data(series).join('path').attr('fill', (d, i) => CATEGORIES[i].color).attr('fill-opacity', .62).attr('d', tlArea);
+  const len = { live: CONFIG.liveWindowMin * 6e4, '1h': 36e5, '24h': 864e5, '7d': 864e5 }[state.window];
+  const wx = TL_W * (1 - Math.min(1, len / 864e5));
+  tlWin.attr('x', wx).attr('width', TL_W - wx);
+}
+function renderTimelineHead() {
+  if (!state.replay) { tlPlay.style('display', 'none'); return; }
+  const f = 1 - (Date.now() - state.replayT) / 864e5;
+  tlPlay.style('display', null).attr('x1', f * TL_W).attr('x2', f * TL_W);
+}
+function renderTlMarkers() {
+  const now = Date.now(), t0 = now - 864e5;
+  while (tlMarkers.length && tlMarkers[0].ts < t0) tlMarkers.shift();
+  d3.select('#tlMarks').selectAll('button').data(tlMarkers, d => d.ts + d.name).join('button')
+    .attr('type', 'button').attr('class', 'tlm').attr('title', d => `${d.name} · ${CAT[d.cat].en.split(' / ')[0]} → ${REGION_NAME[d.region][0]} · ${fmtGstHM.format(d.ts)} GST — click to replay`)
+    .attr('aria-label', d => `Replay ${d.name}`)
+    .style('border-bottom-color', d => CAT[d.cat].color)
+    .on('click', (ev, d) => { enterReplay(Math.max(t0, d.ts - 5 * 6e4)); updateScrub(); })
+    .style('left', d => ((d.ts - t0) / 864e5 * 100).toFixed(2) + '%');
+}
+// hover crosshair: the (transparent) range input receives the pointer
+{
+  const inp = $('scrubRange'), hov = $('tlHover'), lbl = hov.firstElementChild;
+  inp.addEventListener('pointermove', ev => {
+    const r = inp.getBoundingClientRect(), f = clamp((ev.clientX - r.left) / r.width, 0, 1), t = Date.now() - (1 - f) * 864e5;
+    const bin = Math.min(143, Math.floor(f * 144));
+    hov.classList.add('show'); hov.style.left = (f * 100).toFixed(2) + '%';
+    lbl.textContent = `${fmtGstHM.format(t)} · ${fmtCompact(tlTotals[bin])} /10 min`;
+  });
+  inp.addEventListener('pointerleave', () => hov.classList.remove('show'));
+}
+
+/* =====================================================================
+   v2.1 — ARC HIT-TESTING (hover an arc head → tooltip; click → inspector)
+   ===================================================================== */
+const ptr = { x: 0, y: 0, in: false, cx: 0, cy: 0 };
+svgEl.addEventListener('pointermove', ev => { const r = mapWrap.getBoundingClientRect(); ptr.x = ev.clientX - r.left; ptr.y = ev.clientY - r.top; ptr.cx = ev.clientX; ptr.cy = ev.clientY; ptr.in = true; });
+svgEl.addEventListener('pointerleave', () => { ptr.in = false; setHoverArc(null); });
+svgEl.addEventListener('click', ev => { if (state.hover.arc && state.mode !== 'soc') { ev.stopPropagation(); openInspector('incident', state.hover.arc.e); } }, true);
+function arcTooltipHTML(e) {
+  const c = CAT[e.category], s = countries[e.src], d = countries[e.dst];
+  return `<h4><i style="width:.55rem;height:.55rem;border-radius:2px;background:${c.color}"></i>${esc(c.en.split(' / ')[0])} <span class="sv ${sevClass(e.severity)}" style="font:700 .6rem var(--font-mono);padding:0 .3rem;border-radius:3px;border:1px solid">S${e.severity}</span></h4>
+    <div class="tt-row"><span><span class="flag">${s.flag}</span> ${esc(s.name)} → <span class="flag">${d.flag}</span> ${esc(d.name)}${e.dstNode ? ' (' + EMIRATE[e.dstNode].en + ')' : ''}</span></div>
+    <div class="tt-row">${e.blocked ? '<span style="color:var(--green-text);font-weight:700">BLOCKED</span>' : '<span style="color:var(--red-text);font-weight:700">IMPACT</span>'}<b>${fmtUSD(e.damageUSD)}</b></div>
+    <div class="tt-row" style="color:var(--dim)">${esc(e.note || '')}</div>
+    <hr><div class="tt-row" style="font-size:.66rem">Click to open the incident</div>`;
+}
+function setHoverArc(a) {
+  if (state.hover.arc === a) return;
+  state.hover.arc = a;
+  svgEl.style.cursor = a ? 'pointer' : '';
+  if (a) { tooltip.innerHTML = arcTooltipHTML(a.e); tooltip.classList.add('show'); moveTooltip({ clientX: ptr.cx, clientY: ptr.cy }); }
+  else if (hotCountry) showTooltip(hotCountry.ev, hotCountry.d);   // give the country tooltip back
+  else hideTooltip();
+}
+function hitTestArcs() {
+  if (!ptr.in || state.orbital || state.mode === 'soc') { if (state.hover.arc) setHoverArc(null); return; }
+  let best = null, bd = 12 * 12;
+  for (const a of arcs) { if (a.hx == null) continue; const dx = a.hx - ptr.x, dy = a.hy - ptr.y, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = a; } }
+  setHoverArc(best);
+  if (best) moveTooltip({ clientX: ptr.cx, clientY: ptr.cy });
+}
+
+/* =====================================================================
+   v2.1 — INCIDENT INSPECTOR / COUNTRY DOSSIER (slide-over)
+   ===================================================================== */
+const ins = { el: $('inspector'), mode: null, e: null, code: null, prevFocus: null };
+function openInspector(kind, payload) {
+  if (state.mode === 'soc') return;
+  ins.mode = kind;
+  if (kind === 'incident') { ins.e = payload; ins.code = null; state.selected = payload.id; }
+  else { ins.code = payload; ins.e = null; state.selected = null; }
+  renderInspector();
+  if (!ins.el.classList.contains('open')) { ins.prevFocus = document.activeElement; ins.el.classList.add('open'); }
+  ins.el.setAttribute('aria-hidden', 'false');
+  $('insClose').focus({ preventScroll: true });
+}
+function closeInspector() {
+  if (!ins.el.classList.contains('open')) return;
+  ins.el.classList.remove('open'); ins.el.setAttribute('aria-hidden', 'true');
+  state.selected = null; ins.e = null; ins.mode = null; ins.code = null;
+  if (ins.prevFocus && ins.prevFocus.isConnected && ins.prevFocus.focus) ins.prevFocus.focus({ preventScroll: true });
+}
+const kvHTML = rows => `<div class="kv">${rows.map(([l, v, cls]) => `<div><label>${l}</label><b class="${cls || ''}">${v}</b></div>`).join('')}</div>`;
+function stepperHTML(e) {
+  return `<ol class="kc-step" aria-label="Kill chain — ${e.blocked ? 'stopped at ' + KILL_CHAIN[e.stage - 1].en : 'actions on objectives reached'}">${KILL_CHAIN.map((s, i) => {
+    const n = i + 1, cls = n < e.stage ? 'done' : n === e.stage ? (e.blocked ? 'stop' : 'hit') : '';
+    return `<li class="${cls}"><i></i><span class="en">${s.en}</span><span class="ar" lang="ar">${s.ar}</span></li>`; }).join('')}</ol>`;
+}
+function renderInspector() {
+  const body = $('insBody');
+  if (ins.mode === 'incident' && ins.e) {
+    const e = ins.e, c = CAT[e.category], s = countries[e.src], d = countries[e.dst], a = e.actor && ACTOR[e.actor], sec = SECTOR_LIST.find(x => x.key === e.sector);
+    $('insTitle').textContent = 'Incident'; $('insTitleAr').textContent = 'حادث';
+    body.style.setProperty('--c', c.color);
+    body.innerHTML = `
+      <div class="ins-title"><span class="id">${esc(e.id)} · ${fmtGstTime.format(e.ts)} GST</span><span class="tag">${esc(c.en)}</span><span class="sv ${sevClass(e.severity)}" style="font:700 .62rem var(--font-mono);padding:0 .3rem;border-radius:3px;border:1px solid">S${e.severity} ${SEVERITY[e.severity - 1].en}</span>${e.blocked ? '<span class="blk" style="color:var(--green-text);font-weight:700;font-size:.62rem;letter-spacing:.06em">BLOCKED</span>' : '<span style="color:var(--red-text);font-weight:700;font-size:.62rem;letter-spacing:.06em">IMPACT</span>'}</div>
+      <div class="ins-route"><span><span class="flag">${s.flag}</span> ${esc(s.code)}<small>${esc(s.name)} · observed source</small></span><span class="arrow">→</span><span><span class="flag">${d.flag}</span> ${esc(d.code)}<small>${esc(d.name)}${e.dstNode ? ' · ' + EMIRATE[e.dstNode].en : ''}</small></span></div>
+      <div class="ins-note">${esc(e.note || '—')}</div>
+      ${kvHTML([['Est. damage', fmtUSD(e.damageUSD), e.blocked ? '' : 'red'], ['Prevented (ledger)', fmtUSD(e.preventedUSD || 0), 'green'], ['Attempts', fmtInt(e.volume)], ['Weight', e.w ? '×' + e.w + ' (sampled)' : '1']])}
+      <div class="ins-sec">Attribution · <span lang="ar">الإسناد</span></div>
+      <div class="ins-actor" style="--c:${a ? a.color : 'var(--gold)'}"><span class="dot"></span><span>${a ? esc(a.en) : esc(e.actorName || 'Unattributed')}${a ? ` <span class="ar" lang="ar">${esc(a.ar)}</span>` : ''}<br><small style="color:var(--dim)">Fictional group (simulated)</small></span>${sec ? `<span style="margin-left:auto;text-align:right;font-size:.7rem;color:var(--muted)">${esc(sec.en)}<br><span lang="ar">${esc(sec.ar)}</span></span><img src="${ASSETS.sectorIcons[sec.key]}" alt="" width="26" height="26">` : ''}</div>
+      <div class="ins-sec">Kill chain · <span lang="ar">سلسلة الهجوم</span></div>
+      ${stepperHTML(e)}
+      <div class="ins-acts">
+        <button type="button" class="ibtn" data-act="replay">${icon('replay')}Replay arc</button>
+        <button type="button" class="ibtn" data-act="focus-src">${icon('target')}Focus ${esc(s.code)}</button>
+        <button type="button" class="ibtn" data-act="focus-dst">${icon('target')}Focus ${esc(d.code)}</button>
+        <button type="button" class="ibtn" data-act="similar">${icon('filter')}Similar incidents</button>
+        <button type="button" class="ibtn" data-act="copy">${icon('copy')}Copy JSON</button>
+      </div>`;
+  } else if (ins.mode === 'country' && ins.code) {
+    const code = ins.code, c = countries[code], r = countryStats(code);
+    $('insTitle').textContent = 'Country dossier'; $('insTitleAr').textContent = 'ملف الدولة';
+    body.style.setProperty('--c', 'var(--gold)');
+    const cats = Object.entries(r.cats).sort((a, b) => b[1] - a[1]), cmax = cats.length ? cats[0][1] : 1;
+    const actors = Object.entries(r.actors).sort((a, b) => b[1] - a[1]).slice(0, 3), amax = actors.length ? actors[0][1] : 1;
+    body.innerHTML = `
+      <div class="ins-route"><span class="flag">${c.flag}</span><span>${esc(c.name)}<small>${esc(REGION_NAME[c.region][0])} · <span lang="ar">${esc(REGION_NAME[c.region][1])}</span> · ${esc(windowLabel())}</small></span></div>
+      ${kvHTML([['Inbound attacks', fmtCompact(r.inVol)], ['Outbound (observed source)', fmtCompact(r.outVol)], ['Blocked', r.inN ? (r.blk / r.inN * 100).toFixed(1) + '%' : '—', 'green'], ['Est. damage', fmtUSD(r.dmg), r.dmg > 1e6 ? 'red' : ''], ['Severity avg / max', r.inN ? (r.sevSum / r.inN).toFixed(1) + ' / ' + r.sevMax : '—'], ['Incidents', fmtCompact(r.inN)]])}
+      <div class="ins-sec">Inbound by category · <span lang="ar">حسب الفئة</span></div>
+      ${cats.length ? `<div class="bars">${cats.map(([k, v]) => `<div class="br" style="--c:${CAT[k].color}"><span class="nm">${esc(CAT[k].en.split(' / ')[0])}</span><span class="bar"><i style="width:${(v / cmax * 100).toFixed(1)}%"></i></span><span class="v">${fmtCompact(v)}</span></div>`).join('')}</div>` : '<div class="ins-empty">No inbound activity in this window</div>'}
+      <div class="ins-sec">Most active groups · <span lang="ar">أنشط المجموعات</span></div>
+      ${actors.length ? `<div class="bars">${actors.map(([k, v]) => `<div class="br" style="--c:${ACTOR[k] ? ACTOR[k].color : 'var(--gold)'}"><span class="nm">${esc(ACTOR[k] ? ACTOR[k].en : k)}</span><span class="bar"><i style="width:${(v / amax * 100).toFixed(1)}%"></i></span><span class="v">${fmtCompact(v)}</span></div>`).join('')}</div>` : '<div class="ins-empty">—</div>'}
+      <div class="ins-acts">
+        <button type="button" class="ibtn" data-act="uae-only">${icon('filter')}Only attacks on this country</button>
+        <button type="button" class="ibtn" data-act="clear-focus">${icon('close')}Clear focus</button>
+      </div>`;
+  }
+}
+ins.el.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const e = ins.e, act = b.dataset.act;
+  if (act === 'replay' && e) { if (state.orbital) setOrbital(false); spawnArc(e, true); addKcToken(e); }
+  else if (act === 'focus-src' && e) { setFocus(e.src); }
+  else if (act === 'focus-dst' && e) { setFocus(e.dst); }
+  else if (act === 'similar' && e) { state.cats = new Set([e.category]); if (e.actor) state.actor = e.actor; onFilterChange(); }
+  else if (act === 'copy' && e) { navigator.clipboard?.writeText(JSON.stringify(e, null, 2)).then(() => { b.innerHTML = icon('copy') + 'Copied'; setTimeout(() => { b.innerHTML = icon('copy') + 'Copy JSON'; }, 1400); }).catch(() => {}); }
+  else if (act === 'uae-only' && ins.code) { state.focus = ins.code; state.blockedOnly = false; onFilterChange(); }
+  else if (act === 'clear-focus') { setFocus(null); }
+});
+$('insClose').addEventListener('click', closeInspector);
+
+/* =====================================================================
+   v2.1 — COMMAND PALETTE (Ctrl/Cmd+K) + SHORTCUTS SHEET (?)
+   ===================================================================== */
+const KEYS = [
+  ['Ctrl K', 'Search & commands', 'البحث والأوامر'], ['?', 'This sheet', 'هذه القائمة'], ['Esc', 'Close panel / clear focus', 'إغلاق'],
+  ['Space', 'Pause / play', 'إيقاف مؤقت'], ['R', 'Reset view & filters', 'إعادة الضبط'], ['F', 'Fullscreen', 'ملء الشاشة'],
+  ['1 – 6', 'Toggle a category', 'تبديل فئة'], ['G', 'Globe projection', 'الكرة الأرضية'], ['O', 'Orbital 3D view', 'العرض المداري'],
+  ['H', 'Holo shader', 'المؤثرات'], ['M', 'Alert sting (sound)', 'الصوت'], ['W', 'Scenario controls', 'السيناريوهات'],
+  ['← →', 'Scrub the timeline (when focused)', 'تحريك الخط الزمني'], ['Enter', 'Open focused row / cell', 'فتح العنصر']
+];
+$('keysGrid').innerHTML = KEYS.map(([k, en, ar]) => `<div><kbd>${k}</kbd><span>${en}</span><span class="ar" lang="ar">${ar}</span></div>`).join('');
+function openKeys(on) {
+  const el = $('keysSheet'), open = on == null ? !el.classList.contains('open') : on;
+  el.classList.toggle('open', open);
+  if (open) { closePalette(); el.querySelector('.pal').setAttribute('tabindex', '-1'); el.querySelector('.pal').focus({ preventScroll: true }); }
+}
+$('keysSheet').addEventListener('click', ev => { if (ev.target === ev.currentTarget) openKeys(false); });
+
+let palItems = [], palFiltered = [], palSel = 0;
+function buildPalette() {
+  const cmd = (en, ar, run, grp = 'Command') => ({ en, ar, grp, run });
+  palItems = [
+    cmd('SOC Wall mode', 'وضع شاشة العمليات', () => setMode('soc')), cmd('Analyst mode', 'وضع المحلل', () => setMode('analyst')), cmd('Briefing mode', 'وضع الإحاطة', () => setMode('briefing')),
+    cmd('Toggle globe projection', 'الكرة الأرضية', () => setGlobe(!state.globe)), cmd('Toggle Orbital 3D view', 'العرض المداري', () => setOrbital(!state.orbital)),
+    cmd('Toggle holo shader', 'المؤثرات', () => setHolo(!state.holo)), cmd('Toggle alert sound', 'الصوت', () => setSound(!state.sound)),
+    cmd('Pause / play', 'إيقاف مؤقت / تشغيل', () => setPaused(!state.paused)), cmd('Reset view & filters', 'إعادة الضبط', resetAll),
+    cmd('Export briefing PNG', 'تصدير صورة', () => { if (state.mode !== 'briefing') setMode('briefing'); setTimeout(exportPNG, 300); }),
+    cmd('Window: Live (15 min)', 'النافذة: مباشر', () => setWindow('live'), 'Window'), cmd('Window: last 1h', 'آخر ساعة', () => setWindow('1h'), 'Window'),
+    cmd('Window: last 24h', 'آخر ٢٤ ساعة', () => setWindow('24h'), 'Window'), cmd('Window: last 7d', 'آخر ٧ أيام', () => setWindow('7d'), 'Window'),
+    cmd('Only blocked incidents', 'المصدودة فقط', () => { state.blockedOnly = !state.blockedOnly; onFilterChange(); }, 'Filter'),
+    cmd('Only attacks targeting the UAE', 'يستهدف الإمارات', () => { state.uaeOnly = !state.uaeOnly; onFilterChange(); }, 'Filter'),
+    cmd('Scenario controls', 'السيناريوهات', () => toggleScenario(true)), cmd('Keyboard shortcuts', 'الاختصارات', () => openKeys(true)),
+    ...Object.entries(SCENARIOS).map(([k, s]) => cmd('Scenario: ' + s.en, s.ar, () => runScenario(k), 'Scenario')),
+    ...CATEGORIES.map(c => ({ en: c.en, ar: c.ar, grp: 'Category', c: c.color, run: () => isolateCategory(c.key) })),
+    ...ACTORS.map(a => ({ en: a.en, ar: a.ar, grp: 'Actor group', c: a.color, run: () => { state.actor = a.key; onFilterChange(); } })),
+    ...SECTOR_LIST.map(s => ({ en: s.en + ' sector', ar: s.ar, grp: 'Sector', run: () => { state.sector = s.key; onFilterChange(); } })),
+    ...EMIRATES.map(e => ({ en: e.en, ar: e.ar, grp: 'Emirate', run: () => { state.node = e.key; state.uaeOnly = true; onFilterChange(); } })),
+    ...Object.values(countries).sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ en: c.name, ar: c.code, grp: 'Country', flag: c.flag, run: () => { setFocus(c.code); openInspector('country', c.code); } }))
+  ];
+}
+const norm = s => String(s).toLowerCase().normalize('NFKD');
+function palScore(it, q) {
+  if (!q) return 1;
+  const hay = [norm(it.en), norm(it.ar || ''), norm(it.grp)];
+  let best = 0;
+  for (const h of hay) {
+    if (h.startsWith(q)) best = Math.max(best, 4);
+    else if (h.includes(q)) best = Math.max(best, 3);
+    else { let i = 0; for (const ch of h) if (ch === q[i]) i++; if (i === q.length) best = Math.max(best, 1); }
+  }
+  return best;
+}
+function renderPalette() {
+  const q = norm($('palInput').value.trim());
+  palFiltered = palItems.map(it => ({ it, s: palScore(it, q) })).filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, q ? 16 : 14).map(x => x.it);
+  palSel = Math.min(palSel, Math.max(0, palFiltered.length - 1));
+  $('palList').innerHTML = palFiltered.length ? palFiltered.map((it, i) => `<li role="option" id="pal-${i}" aria-selected="${i === palSel}" data-i="${i}" style="--c:${it.c || 'var(--gold)'}">${it.flag ? `<span class="flag">${it.flag}</span>` : '<span class="sw"></span>'}<span>${esc(it.en)}</span>${it.ar ? `<span class="ar" lang="ar">${esc(it.ar)}</span>` : ''}<span class="grp">${esc(it.grp)}</span></li>`).join('')
+    : '<li class="none">No match — try a country, actor, Emirate, category or command</li>';
+  $('palInput').setAttribute('aria-activedescendant', palFiltered.length ? 'pal-' + palSel : '');
+  const el = document.getElementById('pal-' + palSel); if (el) el.scrollIntoView({ block: 'nearest' });
+}
+function openPalette() {
+  if (state.mode === 'soc') setMode('analyst');
+  if (!palItems.length) buildPalette();
+  openKeys(false);
+  const el = $('palette'); el.classList.add('open');
+  const inp = $('palInput'); inp.value = ''; palSel = 0; renderPalette(); inp.focus();
+}
+function closePalette() { $('palette').classList.remove('open'); }
+function runPalette(i) { const it = palFiltered[i]; if (!it) return; closePalette(); it.run(); }
+$('palInput').addEventListener('input', () => { palSel = 0; renderPalette(); });
+$('palInput').addEventListener('keydown', ev => {
+  if (ev.key === 'ArrowDown') { ev.preventDefault(); palSel = (palSel + 1) % Math.max(1, palFiltered.length); renderPalette(); }
+  else if (ev.key === 'ArrowUp') { ev.preventDefault(); palSel = (palSel - 1 + Math.max(1, palFiltered.length)) % Math.max(1, palFiltered.length); renderPalette(); }
+  else if (ev.key === 'Enter') { ev.preventDefault(); runPalette(palSel); }
+  else if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); closePalette(); }
+});
+$('palList').addEventListener('click', ev => { const li = ev.target.closest('li[data-i]'); if (li) runPalette(+li.dataset.i); });
+$('palList').addEventListener('mousemove', ev => { const li = ev.target.closest('li[data-i]'); if (li && +li.dataset.i !== palSel) { palSel = +li.dataset.i; renderPalette(); } });
+$('palette').addEventListener('click', ev => { if (ev.target === ev.currentTarget) closePalette(); });
+
+/* =====================================================================
+   v2.1 — DEEP LINKS (view state ⇄ URL hash; shareable, bookmarkable)
+   ===================================================================== */
+let hashReady = false, hashTimer = 0;
+function writeHash() {
+  if (!hashReady) return;
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const p = new URLSearchParams();
+    if (state.mode !== 'analyst') p.set('m', state.mode);
+    if (state.window !== '24h') p.set('w', state.window);
+    if (state.orbital) p.set('v', 'orbital'); else if (state.globe) p.set('v', 'globe');
+    if (state.cats.size !== CATEGORIES.length) p.set('c', [...state.cats].join(','));
+    if (state.minSev > 1) p.set('s', state.minSev);
+    if (state.maxSev < 5) p.set('S', state.maxSev);
+    if (state.uaeOnly) p.set('u', '1');
+    if (state.blockedOnly) p.set('b', '1');
+    if (state.focus) p.set('f', state.focus);
+    if (state.stage) p.set('st', state.stage);
+    if (state.actor) p.set('a', state.actor);
+    if (state.sector) p.set('sec', state.sector);
+    if (state.node) p.set('n', state.node);
+    if (!state.holo) p.set('h', '0');
+    const s = p.toString(), url = location.pathname + location.search + (s ? '#' + s : '');
+    try { history.replaceState(null, '', url); } catch (_) { if (s) location.hash = s; }
+  }, 150);
+}
+function readHash() {
+  const h = location.hash.replace(/^#/, ''); if (!h) return;
+  const p = new URLSearchParams(h), g = k => p.get(k);
+  if (g('c')) { const set = new Set(g('c').split(',').filter(k => CAT[k])); if (set.size) state.cats = set; }
+  if (g('s')) state.minSev = clamp(+g('s') || 1, 1, 5);
+  if (g('S')) state.maxSev = clamp(+g('S') || 5, state.minSev, 5);
+  state.uaeOnly = g('u') === '1'; state.blockedOnly = g('b') === '1';
+  if (g('f') && countries[g('f')]) state.focus = g('f');
+  if (g('st')) { const st = +g('st'); if (st >= 1 && st <= 7) state.stage = st; }
+  if (g('a') && ACTOR[g('a')]) state.actor = g('a');
+  if (g('sec') && SECTOR_LIST.some(s => s.key === g('sec'))) state.sector = g('sec');
+  if (g('n') && EMIRATE[g('n')]) { state.node = g('n'); state.uaeOnly = true; }
+  if (g('w') && ['live', '1h', '24h', '7d'].includes(g('w'))) state.window = g('w');
+  if (g('h') === '0') setHolo(false);
+  if (g('v') === 'globe') setGlobe(true);
+  if (state.focus) { const c = countries[state.focus]; focusGeo(c.lng, c.lat, world.find(w => w.id === c.id)); }
+  if (g('v') === 'orbital') setOrbital(true);
+  if (g('m') && ['soc', 'briefing'].includes(g('m'))) setMode(g('m'));
+}
+
+/* =====================================================================
+   v2.1 — PRESENTER SCENARIOS (inject drama on demand; always marked simulated)
+   ===================================================================== */
+const SCENARIOS = {
+  campaign: { en: 'Campaign against the UAE', ar: 'حملة ضد الإمارات', c: '#C9A227', sev: 'wave', run() {
+    const cat = ['ransomware', 'ddos', 'apt', 'phishing'][Math.floor(rng() * 4)];
+    surge = { cat, region: 'GCC', uaeShare: .8, until: Date.now() + CONFIG.surgeDurationMs * 1.4 };
+    addFeedNotice(`Scenario: ${CAT[cat].en.split(' / ')[0]} wave against the UAE launched (simulated)`, 'سيناريو: موجة هجمات ضد الإمارات');
+  } },
+  ics: { en: 'Critical ICS hit — Abu Dhabi', ar: 'ضربة حرجة على البنية التحتية — أبوظبي', c: '#FB923C', sev: 'S5', run() {
+    injectEvent({ category: 'ics', dst: 'ARE', dstNode: 'AUH', severity: 5, blocked: false, sector: 'energy', note: 'Unauthorised Modbus writes reached a Utilities (Power & Water) PLC segment — safety interlock engaged' });
+  } },
+  ddos: { en: 'DDoS flood — Dubai', ar: 'فيضان حجب الخدمة — دبي', c: '#22D3EE', sev: 'S5', run() {
+    injectEvent({ category: 'ddos', dst: 'ARE', dstNode: 'DXB', severity: 5, blocked: false, volume: 4200, sector: 'finance', note: 'HTTP/2 rapid-reset burst against Banking & Finance APIs, 840 Gbps peak — degraded for 6 min' });
+  } },
+  apt: { en: 'APT breach — Government', ar: 'اختراق متقدم — الحكومة', c: '#C9A227', sev: 'S5', run() {
+    injectEvent({ category: 'apt', dst: 'ARE', dstNode: 'AUH', severity: 5, blocked: false, sector: 'government', actor: 'GF', note: 'Long-dwell implant found in Government mail tier — credential-dumping tooling on domain controllers' });
+  } },
+  repelled: { en: 'Blocked wave at the perimeter', ar: 'موجة مصدودة عند الحدود', c: '#34C774', sev: 'wave', run() {
+    surge = { cat: 'ransomware', region: 'GCC', uaeShare: .9, until: Date.now() + CONFIG.surgeDurationMs };
+    for (let i = 0; i < 14; i++) injectEvent({ category: 'ransomware', dst: 'ARE', dstNode: pickW(EMIRATES, n => n.w).key, severity: 4, blocked: true, sector: 'healthcare' }, { quiet: i > 0 });
+  } },
+  calm: { en: 'Calm down', ar: 'تهدئة', c: '#A3AFBC', sev: '', run() {
+    surge = null; nextSurgeAt = Date.now() + 300e3; state.rateMul = 1; $('scRate').value = 0; $('scRateLbl').textContent = '×1.0';
+    addFeedNotice('Scenario: campaign pressure released (simulated)', 'سيناريو: تهدئة');
+  } }
+};
+function injectEvent(o, { quiet = false } = {}) {
+  const now = Date.now(), e = makeEvent(now);
+  Object.assign(e, o);
+  const cat = CAT[e.category];
+  e.id = 'SC-' + (++seq).toString(36).toUpperCase(); e.ts = now;
+  if (e.dst !== 'ARE') delete e.dstNode;
+  e.stage = e.blocked ? Math.min(e.stage, 6) : 7;
+  const potential = DAMAGE_BASE[e.severity - 1] * cat.dmg * (e.blocked ? 1 : 2.5) * lognormal(0, .35);
+  e.damageUSD = Math.round(e.blocked ? potential * .01 : potential);
+  e.preventedUSD = e.blocked ? Math.round(potential * .99 * CONFIG.preventedRealization * 40) : 0;
+  if (!o.actor) e.actor = pickW(ACTORS, a => (a.cats[e.category] || .15)).key;
+  insertEvent(e); lastEventAt = now;
+  kToday.tgt += e.volume; if (e.blocked) kBlocked.tgt += e.volume;
+  if (state.replay) exitReplay();
+  spawnArc(e, true); addKcToken(e); if (!quiet) addFeedLine(e);
+  if (!quiet && !e.blocked && e.severity >= 5) { lastShockAt = -1e9; shockArmedAt = 0; checkCritical(e, true); }
+  if (!quiet) renderPanels();
+  return e;
+}
+function runScenario(key) { const s = SCENARIOS[key]; if (!s) return; s.run(); }
+$('scList').innerHTML = Object.entries(SCENARIOS).map(([k, s]) => `<button type="button" data-sc="${k}" style="--c:${s.c}"><span class="t"><span>${esc(s.en)}</span><span class="ar" lang="ar">${esc(s.ar)}</span></span>${s.sev ? `<span class="sv ${s.sev === 'S5' ? 'sev-crit' : 'sev-med'}">${s.sev}</span>` : ''}</button>`).join('');
+$('scList').addEventListener('click', ev => { const b = ev.target.closest('[data-sc]'); if (b) runScenario(b.dataset.sc); });
+$('scRate').addEventListener('input', ev => { state.rateMul = Math.pow(2, +ev.target.value); $('scRateLbl').textContent = '×' + state.rateMul.toFixed(state.rateMul < 1 ? 2 : 1); });
+function toggleScenario(on) {
+  const el = $('scenario'), open = on == null ? !el.classList.contains('open') : on;
+  if (open && state.mode === 'briefing') return;
+  el.classList.toggle('open', open); $('bScenario').setAttribute('aria-pressed', open);
 }
 
 /* =====================================================================
@@ -2529,11 +3281,11 @@ function simulateLive(dt) {
     const region = ['GCC', 'EUR', 'NAM', 'APAC'][Math.floor(rng() * 4)];
     surge = { cat, region, until: now + CONFIG.surgeDurationMs }; // detected and named by computeCampaigns()
   } else if (surge && now > surge.until) { surge = null; nextSurgeAt = now + rand(...CONFIG.surgeEveryMs); }
-  genAcc += dt / 1000 * CONFIG.liveRate * (surge ? 1.6 : 1);
+  genAcc += dt / 1000 * CONFIG.liveRate * state.rateMul * (surge ? 1.6 : 1);
   while (genAcc >= 1) {
     genAcc--;
     const e = makeEvent(now);
-    events.push(e);
+    events.push(e); lastEventAt = now;
     kToday.tgt += e.volume; if (e.blocked) kBlocked.tgt += e.volume; // smooth counters between stat ticks
     if (!state.replay) { spawnArc(e); queueFeed(e); addKcToken(e); checkCritical(e); }
   }
@@ -2569,6 +3321,7 @@ function frame(t) {
   }
   if (state.orbital) { if (orbital.renderer) orbital.frame(dt); }
   else { drawCanvas(); drawVfx(); drawBloom(); } // when paused the frame is static (snapshot) but stays crisp across resizes
+  hitTestArcs();
   drawKillChain(dt);
   tickCounters();
   flushFeed(t);
@@ -2596,6 +3349,8 @@ function tickClock() {
 window.threatscape = {
   CONFIG, countries, categories: CATEGORIES.map(c => c.key),
   get events() { return events; },
+  /** In-flight arcs on the flat/globe map (read-only; each has .e = its event) */
+  get arcs() { return arcs; },
   /** Push events: [{ ts, src, dst, category, severity, damageUSD, blocked, note,
    *                  volume?, dstNode?, stage? (1–7 or 'Exploit'), actor?, sector?, preventedUSD? }] */
   ingest(arr, { animate = true } = {}) {
@@ -2623,7 +3378,17 @@ window.threatscape = {
   setSimulation(on) { state.simulate = !!on; },
   /** Remove all events (e.g. before loading a real export) */
   clear() { events = []; arcs.length = 0; impacts.length = 0; feedEl.innerHTML = ''; renderPanels(); },
-  setMode, setWindow, setFocus
+  setMode, setWindow, setFocus,
+  // v2.1
+  /** Run a presenter scenario: 'campaign' | 'ics' | 'ddos' | 'apt' | 'repelled' | 'calm' */
+  scenario: runScenario, scenarios: Object.keys(SCENARIOS),
+  /** Inject one simulated incident now (fields override the generator), e.g. inject({ category:'ics', dst:'ARE', dstNode:'FUJ', severity:5, blocked:false }) */
+  inject: injectEvent,
+  /** Multiply the simulated attack rate (0.25–4) */
+  setRate(mul) { state.rateMul = clamp(+mul || 1, .25, 4); },
+  /** Open the inspector on an incident object or id, or a country code */
+  inspect(x) { if (typeof x === 'string' && countries[x]) { setFocus(x); openInspector('country', x); } else { const e = typeof x === 'string' ? events.find(ev => ev.id === x) : x; if (e) openInspector('incident', e); } },
+  openPalette
 };
 
 /* =====================================================================
@@ -2638,6 +3403,8 @@ new ResizeObserver(() => { resizeKillChain(); }).observe(kcCanvas.parentElement)
 new ResizeObserver(() => { buildConstellation(); if (lastStats) updateConstellation(lastStats); }).observe($('actorSvg'));
 loadWorld().finally(() => {
   resizeKillChain(); buildConstellation();
+  try { readHash(); } catch (err) { console.warn('[threatscape] could not restore view from URL', err); }
+  hashReady = true;
   renderPanels(); rebuildFeed(); syncControls(); updateScrub(); computeCampaigns();
   $('loader').classList.add('done');
   setTimeout(() => $('loader').remove(), 900);
